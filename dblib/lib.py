@@ -8,26 +8,26 @@ mydb = cluster["matyi_test"]
 
 def create_table(name: str) -> None:
     if name in mydb.list_collection_names():
-        print("table with given name allready exists in the database")
+        print("A TABLE NAMED " + name + " ALREADY EXISTS IN THE DATABASE!")
         return
     mycol = mydb[name]
     mycol.insert_one({'init': 1})
-    print("table created successfully")
+    print("TABLE " + name + " CREATED!")
         
 def drop_table(name: str) -> None:
     if name not in mydb.list_collection_names():
-        print("table with given name does not exist in the database")
+        print("A TABLE NAMED " + name + " DOES NOT EXIST IN THE DATABASE!")
         return
     mycol = mydb[name]
     mycol.drop()
-    print("table deleted successfully")
+    print("TABLE " + name + " DROPPED!")
     
 def list_tables() -> None:
     print(mydb.list_collection_names())
 
 ### DATABASE FUNCTIONS: ###
 
-def create_database(databaseName) -> None:
+def create_database(databaseName: str) -> None:
     dbnames = cluster.list_database_names()
     if databaseName in dbnames:
         print("A DATABASE NAMED " + databaseName + " ALREADY EXISTS!")
@@ -38,11 +38,13 @@ def create_database(databaseName) -> None:
         print("DATABASE " + databaseName + " CREATED!")
         #db.drop_collection(initcollection) emiatt letrejon de torlodik is a database
 
-def drop_database(databaseName) -> None:
+def drop_database(databaseName: str) -> None:
     dbnames = cluster.list_database_names()
     if databaseName in dbnames:
         cluster.drop_database(databaseName)
         print("DATABASE " + databaseName + " DROPPED!")
     else:
         print("DATABASE " + databaseName + " DOES NOT EXIST!")
+
+### INDEX FUNCTIONS: ###
 
