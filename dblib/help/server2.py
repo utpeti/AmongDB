@@ -1,3 +1,6 @@
+#flask --app ./server2.py --debug run
+#ha akarod futtatni is :D
+
 from flask import Flask, request, jsonify
 
 import lib
