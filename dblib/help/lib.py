@@ -48,3 +48,5 @@ def drop_database(databaseName: str) -> None:
 
 ### INDEX FUNCTIONS: ###
 
+def create_index(indexName: str) -> None:
+    print(indexName)
