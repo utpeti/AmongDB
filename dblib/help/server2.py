@@ -20,10 +20,10 @@ app = Flask(__name__,
 @app.route("/api/databases", methods=['POST'])
 def get_databases():
     valami = request.json
-    fuckit(valami['text'])
+    sch(valami['text'])
     return ""
 
-def fuckit(command: str):
+def sch(command: str):
     if create_database_regex.match(command):
         valami = create_database_regex.search(command)
         lib.create_database(valami.group(1))
@@ -32,9 +32,20 @@ def fuckit(command: str):
         lib.drop_database(valami.group(1))
     elif create_table_regex.match(command):
         valami = create_table_regex.search(command)
-        lib.create_table(valami.group(1))
+        lib.create_table(valami.group(1),command)
     elif drop_table_regex.match(command):
         valami = drop_table_regex.search(command)
         lib.drop_table(valami.group(1))
     else:
         print("Command not known")
+        
+'''
+CREATE TABLE LAJOS (
+    ID INT,
+    f FLOAT,
+    b BIT,
+    d DATE,
+    dt DATETIME,
+    name VARCHAR
+);
+'''
