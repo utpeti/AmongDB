@@ -30,7 +30,7 @@ def sch(command: str):
     elif drop_database_regex.match(command):
         valami = drop_database_regex.search(command)
         lib.drop_database(valami.group(1))
-    elif create_table_regex.match(command):
+    elif create_table_regex.match(command):     #command-ot is kuldi mar
         valami = create_table_regex.search(command)
         lib.create_table(valami.group(1),command)
     elif drop_table_regex.match(command):
@@ -39,13 +39,3 @@ def sch(command: str):
     else:
         print("Command not known")
         
-'''
-CREATE TABLE LAJOS (
-    ID INT,
-    f FLOAT,
-    b BIT,
-    d DATE,
-    dt DATETIME,
-    name VARCHAR
-);
-'''

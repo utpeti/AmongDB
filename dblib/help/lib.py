@@ -19,7 +19,6 @@ def create_table(name: str, content: str) -> None:
         line = list(filter(None,line.strip(',').split(' ')))
         if line[1] in TYPES:
             tablestruct[line[0]] = line[1]
-    print(tablestruct)
     mycol.insert_one(tablestruct)
     print("TABLE " + name + " CREATED!")
         
