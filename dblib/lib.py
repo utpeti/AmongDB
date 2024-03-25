@@ -30,8 +30,8 @@ def drop_table(name: str) -> None:
     mycol.drop()
     print("TABLE " + name + " DROPPED!")
     
-def list_tables() -> None:
-    print(mydb.list_collection_names())
+def list_tables():
+    return mydb.list_collection_names()
 
 ### DATABASE FUNCTIONS: ###
 
@@ -45,6 +45,7 @@ def create_database(databaseName: str) -> None:
         initcollection.insert_one({'DATABASE CREATED': True})
         print("DATABASE " + databaseName + " CREATED!")
         #db.drop_collection(initcollection) emiatt letrejon de torlodik is a database
+        #talan hasonlo modon meg lehetne oldani tablenel(?)
 
 def drop_database(databaseName: str) -> None:
     dbnames = cluster.list_database_names()
@@ -53,6 +54,20 @@ def drop_database(databaseName: str) -> None:
         print("DATABASE " + databaseName + " DROPPED!")
     else:
         print("DATABASE " + databaseName + " DOES NOT EXIST!")
+        
+def list_databases():
+    db_list = cluster.list_database_names()
+    try:
+        db_list.remove('admin')
+        db_list.remove('local')
+    except:
+        pass
+    return db_list
+
+def select_curr_database(name: str) -> None:
+    global mydb
+    mydb = cluster[name]
+    
 
 ### INDEX FUNCTIONS: ###
 
@@ -67,7 +82,7 @@ def create_index(indexName: str, tableName: str, columns: str) -> None:
                 return
         
         for column in columns:
-            collection.create_index(column, name=str(indexName))
+            collection.create_index(column, name=str(indexName)) #maybe nem kell castelni, de igy megy so igy hagyom aztan ott rohad meg valoszinu
             
         print(f"INDEX '{indexName}' CREATED ON TABLE '{tableName}' FOR COLUMNS: {columns}")
     else:
