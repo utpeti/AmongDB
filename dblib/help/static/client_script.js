@@ -52,7 +52,6 @@ function checkForTabinRow(text, index) {
 
 async function sendSomething(event) {
   event.preventDefault(); // Prevent the form from submitting normally
-  console.log('please2')
   const text = document.getElementById('large_text_field').value;
   const res = await fetch('/api/database/commands', {
       method: 'POST',
@@ -68,8 +67,7 @@ async function sendSomething(event) {
 
 //--------------------DB------------------------
 
-async function pleaseForTheLoveOfGod(event) {
-  event.preventDefault();
+async function pleaseForTheLoveOfGod() {
   console.log('please1')
   const listContent = await fetch('/api/database/db_list', {
       method: 'GET',
@@ -77,7 +75,6 @@ async function pleaseForTheLoveOfGod(event) {
           'Content-Type' : 'application/json'
       }
   });
-  console.log(listContent);
   populateList(await listContent.json());
 }
 
@@ -140,5 +137,43 @@ function populateTableList(tables) {
     li.textContent = table;
     tableList.appendChild(li);
   })
+}
+
+function createDatabaseDialog() {
+  const dialog = document.getElementById("createDatabaseDialog");
+  dialog.style.display = "block";
+}
+
+function createDatabaseDialogOk() {
+  const newDatabaseNameInput = document.getElementById("newDatabaseNameInput");
+  if (newDatabaseNameInput.value) {
+    createDatabase(newDatabaseNameInput.value); //funnction that creates the db
+    // Close the dialog
+    const dialog = document.getElementById("createDatabaseDialog");
+    dialog.style.display = "none";
+  }
+}
+
+function createDatabaseDialogCancel() {
+  const newDatabaseNameInput = document.getElementById("newDatabaseNameInput");
+  newDatabaseNameInput.value = "";
+  // Close the dialog
+  const dialog = document.getElementById("createDatabaseDialog");
+  dialog.style.display = "none";
+}
+
+
+
+async function createDatabase(databaseName) {
+  const commandString = 'CREATE DATABASE ' + databaseName;
+  const res = await fetch('/api/database/commands', {
+    method: 'POST',
+    headers: {
+        'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({ "text": commandString })
+  });
+  newDatabaseNameInput.value = "";
+  pleaseForTheLoveOfGod();
 }
 
