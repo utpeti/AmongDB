@@ -31,6 +31,7 @@ while True:
     elif create_table_regex.match(command):
         valami = create_table_regex.search(command)
         lib.create_table(valami.group(1),command)
+        lib.create_table(valami.group(1),command)
     elif drop_table_regex.match(command):
         valami = drop_table_regex.search(command)
         lib.drop_table(valami.group(1))
