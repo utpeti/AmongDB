@@ -1,6 +1,3 @@
-#flask --app ./server2.py --debug run
-#ha akarod futtatni is :D
-
 from flask import Flask, request, jsonify
 
 import lib
@@ -20,25 +17,27 @@ app = Flask(__name__,
 @app.route("/api/databases", methods=['POST'])
 def get_databases():
     valami = request.json
-    sch(valami['text'])
+    fuckit(valami['text'])
     return ""
 
-def sch(command: str):
+def fuckit(command: str):
     if create_database_regex.match(command):
         valami = create_database_regex.search(command)
         lib.create_database(valami.group(1))
     elif drop_database_regex.match(command):
         valami = drop_database_regex.search(command)
         lib.drop_database(valami.group(1))
-    elif create_table_regex.match(command):     #command-ot is kuldi mar
+    elif create_table_regex.match(command):
         valami = create_table_regex.search(command)
         lib.create_table(valami.group(1),command)
     elif drop_table_regex.match(command):
         valami = drop_table_regex.search(command)
         lib.drop_table(valami.group(1))
     elif create_index_regex.match(command):
-        valami = create_index_regex.search(command)
-        lib.create_index(valami.group(1))
+        match = create_index_regex.search(command)
+        index_name = match.group(1)
+        table_name = match.group(2)
+        columns = match.group(3).split(', ')
+        lib.create_index(index_name, table_name, columns)
     else:
         print("Command not known")
-        

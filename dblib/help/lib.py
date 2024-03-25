@@ -45,6 +45,7 @@ def create_database(databaseName: str) -> None:
         initcollection.insert_one({'DATABASE CREATED': True})
         print("DATABASE " + databaseName + " CREATED!")
         #db.drop_collection(initcollection) emiatt letrejon de torlodik is a database
+        #talan hasonlo modon meg lehetne oldani tablenel(?)
 
 def drop_database(databaseName: str) -> None:
     dbnames = cluster.list_database_names()
@@ -56,5 +57,20 @@ def drop_database(databaseName: str) -> None:
 
 ### INDEX FUNCTIONS: ###
 
-def create_index(indexName: str) -> None:
-    print(indexName)
+def create_index(indexName: str, tableName: str, columns: str) -> None:
+    if tableName in mydb.list_collection_names():
+        collection = mydb[tableName]
+        document = collection.find_one()
+        
+        for column in columns:
+            if column.strip() not in document:
+                print("NO COLUMN NAMED " + column + "!")
+                return
+        
+        for column in columns:
+            collection.create_index(column, name=str(indexName)) #maybe nem kell castelni, de igy megy so igy hagyom aztan ott rohad meg valoszinu
+            
+        print(f"INDEX '{indexName}' CREATED ON TABLE '{tableName}' FOR COLUMNS: {columns}")
+    else:
+        print("NO TABLE NAMED " + tableName + "!")
+        
