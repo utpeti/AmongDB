@@ -1,3 +1,29 @@
+//making life a bit happier
+function handleTabKey(event) {
+  const tabKeyCode = 9;
+  const parenthesesKeyCode = 57;
+  if (event.keyCode === tabKeyCode) {
+    event.preventDefault();
+    event.stopPropagation();
+    const textarea = document.getElementById("large_text_field");
+    const currTxt = textarea.value;
+    const cursorPosition = textarea.selectionStart;
+    textarea.value = currTxt.substring(0, cursorPosition) + '\t' + currTxt.substring(cursorPosition);
+    textarea.selectionStart = cursorPosition + '\t'.length;
+    textarea.selectionEnd = textarea.selectionStart;
+  }
+  if (event.keyCode === 57) {
+    event.preventDefault();
+    event.stopPropagation();
+    const textarea = document.getElementById("large_text_field");
+    const currTxt = textarea.value;
+    const cursorPosition = textarea.selectionStart;
+    textarea.value = currTxt.substring(0, cursorPosition) + '()' + currTxt.substring(cursorPosition);
+    textarea.selectionStart = cursorPosition + 1;
+    textarea.selectionEnd = textarea.selectionStart;
+  }
+}
+
 async function sendSomething(event) {
   event.preventDefault(); // Prevent the form from submitting normally
   console.log('please2')
@@ -35,10 +61,12 @@ function populateList(databases) {
   databases.forEach(database => {
     const button = document.createElement('button');
     button.textContent = database;
+    button.textContent = database;
+    button.dataset.value = database;
     button.addEventListener('click', () => {
       selectCurrDB(button.textContent);
-      pleaseForTheLoveOfGod2();
     });
+    button.classList.add('db-button');
     dbList.appendChild(button);
 });
 }
@@ -52,9 +80,16 @@ async function selectCurrDB(name) {
       },
       body: JSON.stringify({ "curr_db": name })
   });
-  document.getElementById('large_text_field').value = '';
-  // const myjson = await res.json();
-  // console.log(myjson);
+  deselectAllButtons();
+  document.querySelector(`button[data-value="${name}"].db-button`).classList.add('active');
+  pleaseForTheLoveOfGod2()
+}
+
+function deselectAllButtons() {
+  const buttons = document.getElementsByClassName('db-button');
+  for (const button of buttons) {
+    button.classList.remove('active');
+  }
 }
 
 
