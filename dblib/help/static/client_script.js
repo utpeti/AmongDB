@@ -2,31 +2,56 @@
 function handleTabKey(event) {
   const tabKeyCode = 9;
   const parenthesesKeyCode = 57;
-  if (event.keyCode === tabKeyCode) {
-    event.preventDefault();
-    event.stopPropagation();
-    const textarea = document.getElementById("large_text_field");
-    const currTxt = textarea.value;
-    const cursorPosition = textarea.selectionStart;
-    textarea.value = currTxt.substring(0, cursorPosition) + '\t' + currTxt.substring(cursorPosition);
-    textarea.selectionStart = cursorPosition + '\t'.length;
-    textarea.selectionEnd = textarea.selectionStart;
+  const enter = 13;
+  const textarea = document.getElementById("large_text_field");
+  const currTxt = textarea.value;
+  const cursorPosition = textarea.selectionStart;
+  switch (event.keyCode) {
+    case tabKeyCode:
+      event.preventDefault();
+      event.stopPropagation();
+      textarea.value = currTxt.substring(0, cursorPosition) + '\t' + currTxt.substring(cursorPosition);
+      textarea.selectionStart = cursorPosition + '\t'.length;
+      textarea.selectionEnd = textarea.selectionStart;
+      break;
+    case parenthesesKeyCode:
+      event.preventDefault();
+      event.stopPropagation();
+      textarea.value = currTxt.substring(0, cursorPosition) + '()' + currTxt.substring(cursorPosition);
+      textarea.selectionStart = cursorPosition + 1;
+      textarea.selectionEnd = textarea.selectionStart;
+      break;
+    case enter:
+      if (currTxt[cursorPosition - 1] === '(' && currTxt[cursorPosition] === ')') {
+        event.preventDefault();
+        event.stopPropagation();
+        textarea.value = currTxt.substring(0, cursorPosition) + '\n\t\n);\n' + currTxt.substring(cursorPosition + 1);
+        textarea.selectionStart = cursorPosition + 2;
+        textarea.selectionEnd = textarea.selectionStart;
+      }
+      else if (checkForTabinRow(currTxt, cursorPosition)) {
+        event.preventDefault();
+        event.stopPropagation();
+        textarea.value = currTxt.substring(0, cursorPosition) + '\n\t\n' + currTxt.substring(cursorPosition + 1);
+        textarea.selectionStart = cursorPosition + 2;
+        textarea.selectionEnd = textarea.selectionStart;
+      }
   }
-  if (event.keyCode === 57) {
-    event.preventDefault();
-    event.stopPropagation();
-    const textarea = document.getElementById("large_text_field");
-    const currTxt = textarea.value;
-    const cursorPosition = textarea.selectionStart;
-    textarea.value = currTxt.substring(0, cursorPosition) + '()' + currTxt.substring(cursorPosition);
-    textarea.selectionStart = cursorPosition + 1;
-    textarea.selectionEnd = textarea.selectionStart;
+}
+
+function checkForTabinRow(text, index) {
+  for (let i = index - 1; i >= 0; i--) {
+    if (text[i] === '\n') {
+      return false;
+    }
+    else if (text[i] === '\t') {
+      return true;
+    }
   }
 }
 
 async function sendSomething(event) {
   event.preventDefault(); // Prevent the form from submitting normally
-  console.log('please2')
   const text = document.getElementById('large_text_field').value;
   const res = await fetch('/api/database/commands', {
       method: 'POST',
@@ -42,8 +67,7 @@ async function sendSomething(event) {
 
 //--------------------DB------------------------
 
-async function pleaseForTheLoveOfGod(event) {
-  event.preventDefault();
+async function pleaseForTheLoveOfGod() {
   console.log('please1')
   const listContent = await fetch('/api/database/db_list', {
       method: 'GET',
@@ -51,7 +75,6 @@ async function pleaseForTheLoveOfGod(event) {
           'Content-Type' : 'application/json'
       }
   });
-  console.log(listContent);
   populateList(await listContent.json());
 }
 
@@ -114,5 +137,43 @@ function populateTableList(tables) {
     li.textContent = table;
     tableList.appendChild(li);
   })
+}
+
+function createDatabaseDialog() {
+  const dialog = document.getElementById("createDatabaseDialog");
+  dialog.style.display = "block";
+}
+
+function createDatabaseDialogOk() {
+  const newDatabaseNameInput = document.getElementById("newDatabaseNameInput");
+  if (newDatabaseNameInput.value) {
+    createDatabase(newDatabaseNameInput.value); //funnction that creates the db
+    // Close the dialog
+    const dialog = document.getElementById("createDatabaseDialog");
+    dialog.style.display = "none";
+  }
+}
+
+function createDatabaseDialogCancel() {
+  const newDatabaseNameInput = document.getElementById("newDatabaseNameInput");
+  newDatabaseNameInput.value = "";
+  // Close the dialog
+  const dialog = document.getElementById("createDatabaseDialog");
+  dialog.style.display = "none";
+}
+
+
+
+async function createDatabase(databaseName) {
+  const commandString = 'CREATE DATABASE ' + databaseName;
+  const res = await fetch('/api/database/commands', {
+    method: 'POST',
+    headers: {
+        'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({ "text": commandString })
+  });
+  newDatabaseNameInput.value = "";
+  pleaseForTheLoveOfGod();
 }
 
