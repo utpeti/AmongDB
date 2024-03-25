@@ -48,3 +48,20 @@ def drop_database(databaseName: str) -> None:
 
 ### INDEX FUNCTIONS: ###
 
+def create_index(indexName: str, tableName: str, columns: str) -> None:
+    if tableName in mydb.list_collection_names():
+        collection = mydb[tableName]
+        document = collection.find_one()
+        
+        for column in columns:
+            if column.strip() not in document:
+                print("NO COLUMN NAMED " + column + "!")
+                return
+        
+        for column in columns:
+            collection.create_index(column)
+            
+        print(f"INDEX '{indexName}' CREATED ON TABLE '{tableName}' FOR COLUMNS: {columns}")
+    else:
+        print("NO TABLE NAMED " + tableName + "!")
+        
