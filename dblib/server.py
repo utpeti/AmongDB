@@ -14,7 +14,7 @@ create_index_regex = re.compile(r'CREATE\s+INDEX\s+(\w+)\s+ON\s+(\w+)\s*\(([^)]+
 
 serverPort = 3000
 serverSocket = socket(AF_INET, SOCK_STREAM)
-serverSocket.bind(('', serverPort))
+serverSocket.bind(('', serverPort)) 
 serverSocket.listen(1)
 print("SERVER: Ready to receive")
 
@@ -30,7 +30,6 @@ while True:
         lib.drop_database(valami.group(1))
     elif create_table_regex.match(command):
         valami = create_table_regex.search(command)
-        lib.create_table(valami.group(1),command)
         lib.create_table(valami.group(1),command)
     elif drop_table_regex.match(command):
         valami = drop_table_regex.search(command)

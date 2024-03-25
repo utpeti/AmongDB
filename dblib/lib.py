@@ -6,23 +6,13 @@ mydb = cluster["matyi_test"]
 
 TYPES = ['INT', 'FLOAT', 'BIT', 'DATE', 'DATETIME', 'VARCHAR']
 
-TYPES = ['INT', 'FLOAT', 'BIT', 'DATE', 'DATETIME', 'VARCHAR']
-
 ### TABLE FUNCTIONS: ###
 
-def create_table(name: str, content: str) -> None:
 def create_table(name: str, content: str) -> None:
     if name in mydb.list_collection_names():
         print("A TABLE NAMED " + name + " ALREADY EXISTS IN THE DATABASE!")
         return
     mycol = mydb[name]
-    # CREATING DICT FROM CONTENT
-    tablestruct = {}
-    for line in content.splitlines()[1:-1]:
-        line = list(filter(None,line.strip(',').split(' ')))
-        if line[1] in TYPES:
-            tablestruct[line[0]] = line[1]
-    mycol.insert_one(tablestruct)
     # CREATING DICT FROM CONTENT
     tablestruct = {}
     for line in content.splitlines()[1:-1]:
@@ -77,7 +67,6 @@ def create_index(indexName: str, tableName: str, columns: str) -> None:
                 return
         
         for column in columns:
-            collection.create_index(column, name=str(indexName))
             collection.create_index(column, name=str(indexName))
             
         print(f"INDEX '{indexName}' CREATED ON TABLE '{tableName}' FOR COLUMNS: {columns}")
