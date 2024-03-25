@@ -14,7 +14,7 @@ create_index_regex = re.compile(r'CREATE\s+INDEX\s+(\w+)\s+ON\s+(\w+)\s*\(([^)]+
 
 serverPort = 3000
 serverSocket = socket(AF_INET, SOCK_STREAM)
-serverSocket.bind(('', serverPort))
+serverSocket.bind(('', serverPort)) 
 serverSocket.listen(1)
 print("SERVER: Ready to receive")
 

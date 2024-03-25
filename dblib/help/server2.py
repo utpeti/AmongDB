@@ -14,7 +14,7 @@ app = Flask(__name__,
             static_folder='static')
 
 
-@app.route("/api/databases", methods=['POST'])
+@app.route("/api/database/commands", methods=['POST'])
 def get_databases():
     valami = request.json
     fuckit(valami['text'])
@@ -41,3 +41,20 @@ def fuckit(command: str):
         lib.create_index(index_name, table_name, columns)
     else:
         print("Command not known")
+        
+@app.route("/api/database/db_list", methods=['GET'])
+def send_databases():
+    databases = lib.list_databases()
+    return jsonify(databases)
+
+@app.route("/api/database/select_db", methods=['POST']) 
+def select_curr_database():
+    name = request.json
+    lib.select_curr_database(name['curr_db'])
+    return ""
+
+
+@app.route("/api/table/table_list", methods=['GET'])
+def send_tables():
+    tables = lib.list_tables()
+    return jsonify(tables)

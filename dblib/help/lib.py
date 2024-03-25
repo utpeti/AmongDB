@@ -30,8 +30,8 @@ def drop_table(name: str) -> None:
     mycol.drop()
     print("TABLE " + name + " DROPPED!")
     
-def list_tables() -> None:
-    print(mydb.list_collection_names())
+def list_tables():
+    return mydb.list_collection_names()
 
 ### DATABASE FUNCTIONS: ###
 
@@ -54,6 +54,20 @@ def drop_database(databaseName: str) -> None:
         print("DATABASE " + databaseName + " DROPPED!")
     else:
         print("DATABASE " + databaseName + " DOES NOT EXIST!")
+        
+def list_databases():
+    db_list = cluster.list_database_names()
+    try:
+        db_list.remove('admin')
+        db_list.remove('local')
+    except:
+        pass
+    return db_list
+
+def select_curr_database(name: str) -> None:
+    global mydb
+    mydb = cluster[name]
+    
 
 ### INDEX FUNCTIONS: ###
 

@@ -10,10 +10,13 @@
             <textarea id="large_text_field" name="large_text_field" rows="10" cols="50">
             </textarea><br>
             <input type="submit" value="Submit">
-            <textarea id="large_text_field" name="large_text_field" rows="10" cols="50">
-            </textarea><br>
-            <input type="submit" value="Submit">
-
         </form>
+        <button type="button" id="refreshBtn" onclick="return pleaseForTheLoveOfGod(event)">Refresh</button>
+        <ul id="dbList">
+            <li id="dbListPlaceholder">Please click 'Refresh' to load databases.</li>
+        </ul>
+        <ul id="tableList">
+            <li id="tableListPlaceholer">Please select a database to load its tables.</li>
+        </ul>
     </body>
 </html>
