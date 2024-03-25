@@ -29,12 +29,15 @@ def fuckit(command: str):
         lib.drop_database(valami.group(1))
     elif create_table_regex.match(command):
         valami = create_table_regex.search(command)
-        lib.create_table(valami.group(1))
+        lib.create_table(valami.group(1),command)
     elif drop_table_regex.match(command):
         valami = drop_table_regex.search(command)
         lib.drop_table(valami.group(1))
     elif create_index_regex.match(command):
-        valami = create_index_regex.search(command)
-        lib.create_index(valami.group(1))
+        match = create_index_regex.search(command)
+        index_name = match.group(1)
+        table_name = match.group(2)
+        columns = match.group(3).split(', ')
+        lib.create_index(index_name, table_name, columns)
     else:
         print("Command not known")
