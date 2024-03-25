@@ -4,14 +4,22 @@ from pymongo import MongoClient
 cluster = MongoClient('mongodb+srv://korposb:1234@amongdb.xrci9ew.mongodb.net/?retryWrites=true&w=majority&appName=AmongDB')
 mydb = cluster["matyi_test"]
 
+TYPES = ['INT', 'FLOAT', 'BIT', 'DATE', 'DATETIME', 'VARCHAR']
+
 ### TABLE FUNCTIONS: ###
 
-def create_table(name: str) -> None:
+def create_table(name: str, content: str) -> None:
     if name in mydb.list_collection_names():
         print("A TABLE NAMED " + name + " ALREADY EXISTS IN THE DATABASE!")
         return
     mycol = mydb[name]
-    mycol.insert_one({'init': 1})
+    # CREATING DICT FROM CONTENT
+    tablestruct = {}
+    for line in content.splitlines()[1:-1]:
+        line = list(filter(None,line.strip(',').split(' ')))
+        if line[1] in TYPES:
+            tablestruct[line[0]] = line[1]
+    mycol.insert_one(tablestruct)
     print("TABLE " + name + " CREATED!")
         
 def drop_table(name: str) -> None:
