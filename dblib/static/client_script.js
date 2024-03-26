@@ -66,7 +66,7 @@ function populateList(databases) {
     button.addEventListener('click', () => {
       selectCurrDB(button.textContent);
     });
-    button.classList.add('db-button');
+    button.classList.add('button');
     dbList.appendChild(button);
 });
 }
@@ -81,12 +81,12 @@ async function selectCurrDB(name) {
       body: JSON.stringify({ "curr_db": name })
   });
   deselectAllButtons();
-  document.querySelector(`button[data-value="${name}"].db-button`).classList.add('active');
+  document.querySelector(`button[data-value="${name}"].button`).classList.add('active');
   pleaseForTheLoveOfGod2()
 }
 
 function deselectAllButtons() {
-  const buttons = document.getElementsByClassName('db-button');
+  const buttons = document.getElementsByClassName('button');
   for (const button of buttons) {
     button.classList.remove('active');
   }

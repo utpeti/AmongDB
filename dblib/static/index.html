@@ -3,27 +3,27 @@
     <head>
         <title>AmongDB</title>
         <script src="client_script.js"></script>
+        <link rel="stylesheet" href="style.css">
     </head>
     <body>
-        <form id="myForm" onsubmit="return sendSomething(event)">
-            <label for="large_text_field">Enter your command:</label><br>
-            <textarea id="large_text_field" name="large_text_field" rows="10" cols="50" onkeydown="handleTabKey(event)">
-            </textarea><br>
-            <input type="submit" value="Submit">
-        </form>
-        <button type="button" id="refreshBtn" onclick="return pleaseForTheLoveOfGod(event)">Refresh</button>
-        <ul id="dbList">
-            <li id="dbListPlaceholder">Please click 'Refresh' to load databases.</li>
-        </ul>
-        <ul id="tableList">
-            <li id="tableListPlaceholer">Please select a database to load its tables.</li>
-        </ul>
+        <header>
+            AmongDB
+        </header>
+        <div class="button-container">
+            <input class="button-fix" type="submit" value="Submit"><br>
+            <button class="button-fix" type="button" id="refreshBtn" onclick="return pleaseForTheLoveOfGod(event)">Refresh</button>
+            <ul id="dbList">
+                <li id="dbListPlaceholder">Please click 'Refresh' to load databases.</li>
+            </ul>
+            <ul id="tableList">
+                <li id="tableListPlaceholer">Please select a database to load its tables.</li>
+            </ul>
+        </div>
+        <div class="textarea-container">
+            <form id="myForm" onsubmit="return sendSomething(event)">
+                <textarea class="code-segment" id="large_text_field" name="large_text_field" rows="10" cols="50" onkeydown="handleTabKey(event)"></textarea><br>
+            </form>
+            <textarea class="message-segment" id="large_message_field" name="large_message_field" rows="10" cols="50"></textarea><br>
+        </div>
     </body>
 </html>
-
-<style>
-    .db-button.active {
-      background-color: rgb(255, 0, 0);
-      color: white;
-    }
-</style>

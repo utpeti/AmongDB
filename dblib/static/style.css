@@ -1,0 +1,109 @@
+@font-face {
+    font-family: Patua-One;
+    src: url(styles/Patua_One/PatuaOne-Regular.ttf); /*Ez nincs hasznalva nyugi*/
+}
+
+@font-face {
+    font-family: Mukta-Mahee;
+    src: url(styles/Mukta_Mahee/MuktaMahee-Bold.ttf);
+}
+/*E7E3D6*/
+textarea.code-segment {
+    color: #354259;
+    background-color: #ECE5C7;
+    font-family: Mukta-Mahee;
+    height: 600px;
+    width: 1400px;
+    resize: none;
+    display: block;
+    margin-left: auto;
+}
+
+textarea.message-segment {
+    color: #354259;
+    background-color: #ECE5C7;
+    font-family: Mukta-Mahee;
+    height: 200px;
+    width: 1400px;
+    resize: none;
+    display: block;
+    margin-left: auto;
+}
+
+body {
+    background-color: #CDC2AE;
+    margin: 0;
+}
+
+.button,
+.button-fix {
+    background-color: #354259;
+    color: #ECE5C7;
+    width: 10em;
+    height: 2.9em;
+    border: #C2DED1 0.2em solid;
+    border-radius: 11px;
+    text-align: center;
+    transition: all 0.6s ease;
+    display: block;
+    font-family: Mukta-Mahee;
+}
+
+.button:hover,
+.button-fix:hover {
+    background-color: #54698b;
+    cursor: pointer;
+}
+
+.button svg,
+.button-fix svg {
+    width: 1.6em;
+    margin: -0.2em 0.8em 1em;
+    position: absolute;
+    display: flex;
+    transition: all 0.6s ease;
+}
+
+.button:hover svg,
+.button-fix:hover svg {
+    transform: translateX(5px);
+}
+
+.button:active,
+.button-fix:active {
+    background-color: #212936;
+    border-radius: 15px;
+}
+
+.button:focus {
+    background-color: #1c1e22;
+}
+
+.text {
+    margin: 0 1.5em
+}
+
+header {
+    background-color: #354259;
+    text-align: center;
+    padding: 25px;
+}
+
+.button-container {
+    position: fixed;
+    left: 0;
+    width: 200px;
+    height: 100%;
+    overflow-y: auto;
+    background-color: #CDC2AE;
+}
+
+.textarea-container {
+    margin-left: 220px;
+}
+
+li {
+    list-style-type: none;
+    color: #354259;
+    font-family: Mukta-Mahee;
+}

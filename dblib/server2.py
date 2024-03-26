@@ -17,10 +17,10 @@ app = Flask(__name__,
 @app.route("/api/database/commands", methods=['POST'])
 def get_databases():
     valami = request.json
-    fuckit(valami['text'])
+    sch(valami['text'])
     return ""
 
-def fuckit(command: str):
+def sch(command: str):
     if create_database_regex.match(command):
         valami = create_database_regex.search(command)
         lib.create_database(valami.group(1))
