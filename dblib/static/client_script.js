@@ -2,25 +2,51 @@
 function handleTabKey(event) {
   const tabKeyCode = 9;
   const parenthesesKeyCode = 57;
-  if (event.keyCode === tabKeyCode) {
-    event.preventDefault();
-    event.stopPropagation();
-    const textarea = document.getElementById("large_text_field");
-    const currTxt = textarea.value;
-    const cursorPosition = textarea.selectionStart;
-    textarea.value = currTxt.substring(0, cursorPosition) + '\t' + currTxt.substring(cursorPosition);
-    textarea.selectionStart = cursorPosition + '\t'.length;
-    textarea.selectionEnd = textarea.selectionStart;
+  const enter = 13;
+  const textarea = document.getElementById("large_text_field");
+  const currTxt = textarea.value;
+  const cursorPosition = textarea.selectionStart;
+  switch (event.keyCode) {
+    case tabKeyCode:
+      event.preventDefault();
+      event.stopPropagation();
+      textarea.value = currTxt.substring(0, cursorPosition) + '\t' + currTxt.substring(cursorPosition);
+      textarea.selectionStart = cursorPosition + '\t'.length;
+      textarea.selectionEnd = textarea.selectionStart;
+      break;
+    case parenthesesKeyCode:
+      event.preventDefault();
+      event.stopPropagation();
+      textarea.value = currTxt.substring(0, cursorPosition) + '()' + currTxt.substring(cursorPosition);
+      textarea.selectionStart = cursorPosition + 1;
+      textarea.selectionEnd = textarea.selectionStart;
+      break;
+    case enter:
+      if (currTxt[cursorPosition - 1] === '(' && currTxt[cursorPosition] === ')') {
+        event.preventDefault();
+        event.stopPropagation();
+        textarea.value = currTxt.substring(0, cursorPosition) + '\n\t\n);\n' + currTxt.substring(cursorPosition + 1);
+        textarea.selectionStart = cursorPosition + 2;
+        textarea.selectionEnd = textarea.selectionStart;
+      }
+      else if (checkForTabinRow(currTxt, cursorPosition)) {
+        event.preventDefault();
+        event.stopPropagation();
+        textarea.value = currTxt.substring(0, cursorPosition) + '\n\t\n' + currTxt.substring(cursorPosition + 1);
+        textarea.selectionStart = cursorPosition + 2;
+        textarea.selectionEnd = textarea.selectionStart;
+      }
   }
-  if (event.keyCode === 57) {
-    event.preventDefault();
-    event.stopPropagation();
-    const textarea = document.getElementById("large_text_field");
-    const currTxt = textarea.value;
-    const cursorPosition = textarea.selectionStart;
-    textarea.value = currTxt.substring(0, cursorPosition) + '()' + currTxt.substring(cursorPosition);
-    textarea.selectionStart = cursorPosition + 1;
-    textarea.selectionEnd = textarea.selectionStart;
+}
+
+function checkForTabinRow(text, index) {
+  for (let i = index - 1; i >= 0; i--) {
+    if (text[i] === '\n') {
+      return false;
+    }
+    else if (text[i] === '\t') {
+      return true;
+    }
   }
 }
 
@@ -35,15 +61,19 @@ async function sendSomething(event) {
       },
       body: JSON.stringify({ "text": text })
   });
+  const data = await res.text();
   document.getElementById('large_text_field').value = '';
+  console.log(data);
+  document.getElementById('large_message_field').value += data + '\n' ;
+  pleaseForTheLoveOfGod();
+  pleaseForTheLoveOfGod2();
   // const myjson = await res.json();
   // console.log(myjson);
 }
 
 //--------------------DB------------------------
 
-async function pleaseForTheLoveOfGod(event) {
-  event.preventDefault();
+async function pleaseForTheLoveOfGod() {
   console.log('please1')
   const listContent = await fetch('/api/database/db_list', {
       method: 'GET',
@@ -115,3 +145,5 @@ function populateTableList(tables) {
     tableList.appendChild(li);
   })
 }
+
+pleaseForTheLoveOfGod()
