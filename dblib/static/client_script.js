@@ -52,6 +52,7 @@ function checkForTabinRow(text, index) {
 
 async function sendSomething(event) {
   event.preventDefault(); // Prevent the form from submitting normally
+  console.log('please2')
   const text = document.getElementById('large_text_field').value;
   const res = await fetch('/api/database/commands', {
       method: 'POST',
@@ -60,14 +61,18 @@ async function sendSomething(event) {
       },
       body: JSON.stringify({ "text": text })
   });
+  const data = await res.text();
   document.getElementById('large_text_field').value = '';
+  console.log(data);
+  document.getElementById('large_message_field').value += data + '\n' ;
   // const myjson = await res.json();
   // console.log(myjson);
 }
 
 //--------------------DB------------------------
 
-async function pleaseForTheLoveOfGod() {
+async function pleaseForTheLoveOfGod(event) {
+  event.preventDefault();
   console.log('please1')
   const listContent = await fetch('/api/database/db_list', {
       method: 'GET',
@@ -75,6 +80,7 @@ async function pleaseForTheLoveOfGod() {
           'Content-Type' : 'application/json'
       }
   });
+  console.log(listContent);
   populateList(await listContent.json());
 }
 
@@ -89,7 +95,7 @@ function populateList(databases) {
     button.addEventListener('click', () => {
       selectCurrDB(button.textContent);
     });
-    button.classList.add('db-button');
+    button.classList.add('button');
     dbList.appendChild(button);
 });
 }
@@ -104,12 +110,12 @@ async function selectCurrDB(name) {
       body: JSON.stringify({ "curr_db": name })
   });
   deselectAllButtons();
-  document.querySelector(`button[data-value="${name}"].db-button`).classList.add('active');
+  document.querySelector(`button[data-value="${name}"].button`).classList.add('active');
   pleaseForTheLoveOfGod2()
 }
 
 function deselectAllButtons() {
-  const buttons = document.getElementsByClassName('db-button');
+  const buttons = document.getElementsByClassName('button');
   for (const button of buttons) {
     button.classList.remove('active');
   }
@@ -138,42 +144,3 @@ function populateTableList(tables) {
     tableList.appendChild(li);
   })
 }
-
-function createDatabaseDialog() {
-  const dialog = document.getElementById("createDatabaseDialog");
-  dialog.style.display = "block";
-}
-
-function createDatabaseDialogOk() {
-  const newDatabaseNameInput = document.getElementById("newDatabaseNameInput");
-  if (newDatabaseNameInput.value) {
-    createDatabase(newDatabaseNameInput.value); //funnction that creates the db
-    // Close the dialog
-    const dialog = document.getElementById("createDatabaseDialog");
-    dialog.style.display = "none";
-  }
-}
-
-function createDatabaseDialogCancel() {
-  const newDatabaseNameInput = document.getElementById("newDatabaseNameInput");
-  newDatabaseNameInput.value = "";
-  // Close the dialog
-  const dialog = document.getElementById("createDatabaseDialog");
-  dialog.style.display = "none";
-}
-
-
-
-async function createDatabase(databaseName) {
-  const commandString = 'CREATE DATABASE ' + databaseName;
-  const res = await fetch('/api/database/commands', {
-    method: 'POST',
-    headers: {
-        'Content-Type': 'application/json'
-    },
-    body: JSON.stringify({ "text": commandString })
-  });
-  newDatabaseNameInput.value = "";
-  pleaseForTheLoveOfGod();
-}
-
