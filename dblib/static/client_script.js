@@ -89,16 +89,45 @@ function populateList(databases) {
   const dbList = document.getElementById('dbList');
   dbList.innerHTML = '';
   databases.forEach(database => {
-    const button = document.createElement('button');
-    button.textContent = database;
-    button.textContent = database;
-    button.dataset.value = database;
-    button.addEventListener('click', () => {
-      selectCurrDB(button.textContent);
+    const dbButton = document.createElement('button');
+    dbButton.textContent = database;
+    dbButton.textContent = database;
+    dbButton.dataset.value = database;
+    dbButton.addEventListener('click', () => {
+      selectCurrDB(dbButton.textContent);
     });
-    button.classList.add('button');
-    dbList.appendChild(button);
+    dbButton.classList.add('button');
+    /*NAJO OMGOMGOMGOMGOGMMOMGMOMGGMGOMGG ---- MAJD KI KELL VEGYEM KULON FUGGVENYBE*/
+    const contextMenu = document.createElement('div');
+    contextMenu.classList.add('context-menu');
+    const deleteButton = document.createElement('button');
+    deleteButton.textContent = 'Drop Database';
+    deleteButton.classList.add('context-menu-button');
+    deleteButton.dataset.value = database;
+    deleteButton.addEventListener('click', () => {
+      deleteDatabase(deleteButton.dataset.value);
+      contextMenu.style.display = 'none';
+    });
+
+    contextMenu.appendChild(deleteButton);
+    document.body.appendChild(contextMenu);
+    dbButton.addEventListener('contextmenu', (e) => {
+      e.preventDefault();
+      contextMenu.style.left = e.clientX + 'px';
+      contextMenu.style.top = e.clientY + 'px';
+      contextMenu.style.display = 'block';
+      document.addEventListener('click', hideContextMenu);
+    });
+    dbList.appendChild(dbButton);
 });
+}
+
+function hideContextMenu(e) {
+  const contextMenu = document.querySelector('.context-menu');
+  if (!contextMenu.contains(e.target)) {
+    contextMenu.style.display = 'none';
+    document.removeEventListener('click', hideContextMenu);
+  }
 }
 
 async function selectCurrDB(name) {
@@ -182,6 +211,18 @@ async function createDatabase(databaseName) {
     body: JSON.stringify({ "text": commandString })
   });
   newDatabaseNameInput.value = "";
+  pleaseForTheLoveOfGod();
+}
+
+async function deleteDatabase(databaseName) {
+  const commandString = 'DROP DATABASE ' + databaseName;
+  const res = await fetch('/api/database/commands', {
+    method: 'POST',
+    headers: {
+        'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({ "text": commandString })
+  });
   pleaseForTheLoveOfGod();
 }
 

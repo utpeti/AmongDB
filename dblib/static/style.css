@@ -133,32 +133,43 @@ textarea::-webkit-scrollbar-thumb {
     background-color: #CDC2AE;
 }
 
+/*dialog*/
 #createDatabaseDialog {
     display: none;
     position: fixed;
-    top: 50%;
+    top: 20%;
     left: 50%;
+    z-index: 50;
     transform: translate(-50%, -50%);
     background-color: #CDC2AE;
-    padding: 20px;
-    border: 1px solid #ddd;
+    padding: 10px;
+    border: 2px solid #212936;
     border-radius: 5px;
-    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    box-shadow: 0 8px 12px rgba(0, 0, 0, 0.1);
 }
   
 #createDatabaseDialog label {
     display: block;
     margin-bottom: 10px;
+    font-family: Mukta-Mahee;
+    color: #ECE5C7;
+    background-color: #354259;
+    position: relative;
+    padding: 10px;
+    border-radius: 5px;
 }
   
 #createDatabaseDialog input {
     display: block;
-    width: 100%;
+    width: 94%;
     padding: 8px;
     margin-bottom: 10px;
     border-radius: 5px;
     border: 1px solid #212936;
     background-color: #ECE5C7;
+    color: #212936;
+    font-family: Mukta-Mahee;
+    
 }
   
 #createDatabaseDialog .button-row {
@@ -175,8 +186,34 @@ textarea::-webkit-scrollbar-thumb {
     color: #CDC2AE;
     cursor: pointer;
     transition: background-color 0.2s;
+    font-family: Mukta-Mahee;
 }
   
 #createDatabaseDialog .button-fix:hover {
     background-color: #54698b;
+}
+
+.context-menu {
+    position: absolute;
+    display: none;
+    background-color: #54698b;
+    border: 2px solid #212936;
+    box-shadow: 2px 2px 5px rgba(0, 0, 0, 0.5);
+    z-index: 10;
+    border-radius: 5px;
+}
+  
+.context-menu-button {
+    padding: 5px 10px;
+    background-color: #CDC2AE;
+    color: #212936;
+    border: none;
+    cursor: pointer;
+    transition: background-color 0.2s;
+    font-family: Mukta-Mahee;
+}
+  
+.context-menu-button:hover {
+    background-color: #212936;
+    color: #CDC2AE;
 }
