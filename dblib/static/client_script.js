@@ -65,14 +65,15 @@ async function sendSomething(event) {
   document.getElementById('large_text_field').value = '';
   console.log(data);
   document.getElementById('large_message_field').value += data + '\n' ;
+  pleaseForTheLoveOfGod();
+  pleaseForTheLoveOfGod2();
   // const myjson = await res.json();
   // console.log(myjson);
 }
 
 //--------------------DB------------------------
 
-async function pleaseForTheLoveOfGod(event) {
-  event.preventDefault();
+async function pleaseForTheLoveOfGod() {
   console.log('please1')
   const listContent = await fetch('/api/database/db_list', {
       method: 'GET',
@@ -144,3 +145,5 @@ function populateTableList(tables) {
     tableList.appendChild(li);
   })
 }
+
+pleaseForTheLoveOfGod()
