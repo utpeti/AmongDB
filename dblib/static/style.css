@@ -7,7 +7,13 @@
     font-family: Mukta-Mahee;
     src: url(styles/Mukta_Mahee/MuktaMahee-Bold.ttf);
 }
-/*E7E3D6*/
+
+header {
+    font-family: Mukta-Mahee;
+    color: #ECE5C7;
+    font-size: x-small;
+}
+
 textarea.code-segment {
     color: #354259;
     background-color: #ECE5C7;
@@ -90,16 +96,26 @@ header {
 }
 
 .button-container {
-    position: fixed;
+    margin-top: 180px;
+    position:fixed;
     left: 0;
-    width: 200px;
-    height: 100%;
+    width: 210px;
+    height: 70.6%;
     overflow-y: auto;
-    background-color: #CDC2AE;
+    border-style:groove;
+    border-color: #354259;
+    background-color: #d8cfbf;
+    border-left: none;
 }
 
 .textarea-container {
     margin-left: 220px;
+}
+
+.fixed-button-container {
+    position: fixed;
+    left: 0;
+    width: 200px;
 }
 
 li {
@@ -120,7 +136,21 @@ textarea::-webkit-scrollbar-track {
 textarea::-webkit-scrollbar-thumb {
     background-color: #354259;
     border-radius: 20px;
-    border: 3px solid #CDC2AE;
+    border: 3px solid #d8cfbf;
+}
+
+.button-container::-webkit-scrollbar {
+    width: 12px;
+}
+  
+.button-container::-webkit-scrollbar-track {
+    background: #d8cfbf;
+}
+  
+.button-container::-webkit-scrollbar-thumb {
+    background-color: #354259;
+    border-radius: 20px;
+    border: 3px solid #d8cfbf;
 }
 
 .table-container {
@@ -130,7 +160,7 @@ textarea::-webkit-scrollbar-thumb {
     top: 100px;
     height: 500px;
     overflow-y: auto;
-    background-color: #CDC2AE;
+    background-color: #d8cfbf;
 }
 
 #createDatabaseDialog {
@@ -179,4 +209,18 @@ textarea::-webkit-scrollbar-thumb {
   
 #createDatabaseDialog .button-fix:hover {
     background-color: #54698b;
+}
+
+.li-table {
+    margin-left: 210px;
+    position: fixed;
+    left: 0;
+    width: 280px;
+    height: 90.5%;
+    overflow-y: auto;
+    border-style:groove;
+    border-color: #354259;
+    background-color: #d8cfbf;
+    border-top: none;
+    color:#1c1e22;
 }
