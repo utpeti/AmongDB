@@ -7,7 +7,7 @@ create_database_regex = re.compile(r'Create Database (\w+)', re.IGNORECASE)
 drop_database_regex = re.compile(r'Drop Database (\w+)', re.IGNORECASE)
 create_table_regex = re.compile(r'Create Table (\w+)', re.IGNORECASE)
 drop_table_regex = re.compile(r'Drop Table (\w+)', re.IGNORECASE)
-create_index_regex = re.compile(r'Create Index (\w+)', re.IGNORECASE)
+create_index_regex = re.compile(r'CREATE INDEX (\w+) ON TABLE (\w+) \((\w+)\)', re.IGNORECASE)
 
 app = Flask(__name__,
             static_url_path="", 
@@ -38,7 +38,7 @@ def sch(command: str):
         index_name = match.group(1)
         table_name = match.group(2)
         columns = match.group(3).split(', ')
-        lib.create_index(index_name, table_name, columns)
+        commandMsg = lib.create_index(index_name, table_name, columns)
     print(commandMsg)
     return commandMsg
         
