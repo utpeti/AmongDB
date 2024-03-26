@@ -55,16 +55,16 @@ async function sendSomething(event) {
   console.log('please2')
   const text = document.getElementById('large_text_field').value;
   const res = await fetch('/api/database/commands', {
-      method: 'POST',
-      headers: {
-          'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({ "text": text })
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({ "text": text })
   });
   const data = await res.text();
   document.getElementById('large_text_field').value = '';
   console.log(data);
-  document.getElementById('large_message_field').value += data + '\n' ;
+  document.getElementById('large_message_field').value += data + '\n';
   pleaseForTheLoveOfGod();
   pleaseForTheLoveOfGod2();
   // const myjson = await res.json();
@@ -76,10 +76,10 @@ async function sendSomething(event) {
 async function pleaseForTheLoveOfGod() {
   console.log('please1')
   const listContent = await fetch('/api/database/db_list', {
-      method: 'GET',
-      headers: {
-          'Content-Type' : 'application/json'
-      }
+    method: 'GET',
+    headers: {
+      'Content-Type': 'application/json'
+    }
   });
   console.log(listContent);
   populateList(await listContent.json());
@@ -98,17 +98,17 @@ function populateList(databases) {
     });
     button.classList.add('button');
     dbList.appendChild(button);
-});
+  });
 }
 
 async function selectCurrDB(name) {
   console.log('please4')
   const res = await fetch('/api/database/select_db', {
-      method: 'POST',
-      headers: {
-          'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({ "curr_db": name })
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({ "curr_db": name })
   });
   deselectAllButtons();
   document.querySelector(`button[data-value="${name}"].button`).classList.add('active');
@@ -128,10 +128,10 @@ function deselectAllButtons() {
 async function pleaseForTheLoveOfGod2() {
   console.log('please3')
   const listContent = await fetch('/api/table/table_list', {
-      method: 'GET',
-      headers: {
-          'Content-Type' : 'application/json'
-      }
+    method: 'GET',
+    headers: {
+      'Content-Type': 'application/json'
+    }
   });
   populateTableList(await listContent.json());
 }
@@ -177,7 +177,7 @@ async function createDatabase(databaseName) {
   const res = await fetch('/api/database/commands', {
     method: 'POST',
     headers: {
-        'Content-Type': 'application/json'
+      'Content-Type': 'application/json'
     },
     body: JSON.stringify({ "text": commandString })
   });
