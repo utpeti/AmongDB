@@ -146,4 +146,43 @@ function populateTableList(tables) {
   })
 }
 
+//--------------------DIALOG---------------------
+function createDatabaseDialog() {
+  const dialog = document.getElementById("createDatabaseDialog");
+  dialog.style.display = "block";
+}
+
+function createDatabaseDialogOk() {
+  const newDatabaseNameInput = document.getElementById("newDatabaseNameInput");
+  if (newDatabaseNameInput.value) {
+    createDatabase(newDatabaseNameInput.value); //funnction that creates the db
+    // Close the dialog
+    const dialog = document.getElementById("createDatabaseDialog");
+    dialog.style.display = "none";
+  }
+}
+
+function createDatabaseDialogCancel() {
+  const newDatabaseNameInput = document.getElementById("newDatabaseNameInput");
+  newDatabaseNameInput.value = "";
+  // Close the dialog
+  const dialog = document.getElementById("createDatabaseDialog");
+  dialog.style.display = "none";
+}
+
+
+
+async function createDatabase(databaseName) {
+  const commandString = 'CREATE DATABASE ' + databaseName;
+  const res = await fetch('/api/database/commands', {
+    method: 'POST',
+    headers: {
+        'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({ "text": commandString })
+  });
+  newDatabaseNameInput.value = "";
+  pleaseForTheLoveOfGod();
+}
+
 pleaseForTheLoveOfGod()

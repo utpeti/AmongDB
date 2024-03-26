@@ -111,19 +111,19 @@ li {
 /* SCROLLBAR#*/
 textarea::-webkit-scrollbar {
     width: 12px;
-  }
+}
   
-  textarea::-webkit-scrollbar-track {
+textarea::-webkit-scrollbar-track {
     background: #CDC2AE;
-  }
+}
   
-  textarea::-webkit-scrollbar-thumb {
+textarea::-webkit-scrollbar-thumb {
     background-color: #354259;
     border-radius: 20px;
     border: 3px solid #CDC2AE;
-  }
+}
 
-  .table-container {
+.table-container {
     position: absolute;
     left: 200px;
     width: 200px;
@@ -131,4 +131,52 @@ textarea::-webkit-scrollbar {
     height: 500px;
     overflow-y: auto;
     background-color: #CDC2AE;
+}
+
+#createDatabaseDialog {
+    display: none;
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background-color: #CDC2AE;
+    padding: 20px;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+  
+#createDatabaseDialog label {
+    display: block;
+    margin-bottom: 10px;
+}
+  
+#createDatabaseDialog input {
+    display: block;
+    width: 100%;
+    padding: 8px;
+    margin-bottom: 10px;
+    border-radius: 5px;
+    border: 1px solid #212936;
+    background-color: #ECE5C7;
+}
+  
+#createDatabaseDialog .button-row {
+    display: flex;
+    justify-content: center;
+}
+  
+#createDatabaseDialog .button-fix {
+    padding: 8px 16px;
+    margin: 0 5px;
+    border-radius: 5px;
+    border: 1px solid #ddd;
+    background-color: #354259;
+    color: #CDC2AE;
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+  
+#createDatabaseDialog .button-fix:hover {
+    background-color: #54698b;
 }
