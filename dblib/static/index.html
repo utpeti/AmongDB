@@ -12,6 +12,7 @@
         <div class="button-container">
             <input class="button-fix" type="submitButton" value="Submit" onclick = "return sendSomething(event)"><br>
             <button class="button-fix" type="button" id="refreshBtn" onclick="return pleaseForTheLoveOfGod()">Refresh</button>
+            <button class="button-fix" type="createButton" id="createBtn" onclick="return createDatabaseDialog()">+</button>
             <ul id="dbList">
                 <li id="dbListPlaceholder">Please click 'Refresh' to load databases.</li>
             </ul>
@@ -27,3 +28,14 @@
         </div>
     </body>
 </html>
+
+<div id="createDatabaseDialog" class="dialog">
+    <div>
+        <label for="">Create a new database:</label>
+        <input id="newDatabaseNameInput" type="text" />
+    </div>
+    <div class="button-row">
+        <button class="dialog-button button-fix" onclick="createDatabaseDialogOk()">Ok</button>
+        <button class="dialog-button button-fix" onclick="createDatabaseDialogCancel()">Cancel</button>
+    </div>
+</div>
