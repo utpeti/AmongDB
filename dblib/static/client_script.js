@@ -108,14 +108,25 @@ function populateList(databases) {
       deleteDatabase(deleteButton.dataset.value);
       contextMenu.style.display = 'none';
     });
-
     contextMenu.appendChild(deleteButton);
+
+    const createTable = document.createElement('button');
+    createTable.textContent = 'Create Table';
+    createTable.classList.add('context-menu-button');
+    createTable.dataset.value = database;
+    createTable.addEventListener('click', () => {
+      createTableDialog();
+      contextMenu.style.display = 'none';
+    });
+    contextMenu.appendChild(createTable);
+
     document.body.appendChild(contextMenu);
     dbButton.addEventListener('contextmenu', (e) => {
       e.preventDefault();
       contextMenu.style.left = e.clientX + 'px';
       contextMenu.style.top = e.clientY + 'px';
       contextMenu.style.display = 'block';
+      contextMenu.style.flexDirection = 'row';
       document.addEventListener('click', hideContextMenu);
     });
     dbList.appendChild(dbButton);
@@ -176,6 +187,7 @@ function populateTableList(tables) {
 }
 
 //--------------------DIALOG---------------------
+//--------------------CR DB DIALOG---------------------
 function createDatabaseDialog() {
   const dialog = document.getElementById("createDatabaseDialog");
   dialog.style.display = "block";
@@ -191,7 +203,7 @@ function createDatabaseDialogOk() {
   }
 }
 
-function createDatabaseDialogCancel() {
+function createTableDialogCancel() {
   const newDatabaseNameInput = document.getElementById("newDatabaseNameInput");
   newDatabaseNameInput.value = "";
   // Close the dialog
@@ -199,10 +211,70 @@ function createDatabaseDialogCancel() {
   dialog.style.display = "none";
 }
 
+//--------------------CR TABLE DIALOG---------------------
+function createTableDialog() {
+  const dialog = document.getElementById("createTableDialog");
+  dialog.style.display = "block";
+}
+
+function addColumn() {
+  const collInp = document.getElementById("columnNameInput").value;
+  const type = document.getElementById("columnTypeSelect").value;
+  const collList = document.getElementById("coll-list");
+  const li = document.createElement('li');
+  li.textContent = collInp;
+  const typeSpan = document.createElement('span');
+  typeSpan.textContent = `Type: ${type}`;
+  typeSpan.style.marginLeft = '10px';
+  li.appendChild(typeSpan);
+  const delButton = document.createElement('button');
+  delButton.textContent = '-';
+  delButton.onclick = () => {
+    li.remove();
+  }
+  li.appendChild(delButton);
+  collList.appendChild(li);
+}
+
+function createTableDialogOk() {
+    const newDatabaseNameInput = document.getElementById("newTableInput");
+    if (newDatabaseNameInput.value) {
+        createTable(newDatabaseNameInput.value, columns); //funnction that creates the db
+        // Close the dialog
+        const dialog = document.getElementById("createTableDialog");
+        dialog.style.display = "none";
+    }
+}
+
+function createTableDialogCancel() {
+    const newDatabaseNameInput = document.getElementById("newTableInput");
+    newDatabaseNameInput.value = "";
+    const columnNameInput = document.getElementById("columnNameInput");
+    columnNameInput.value = "";
+    const columnTypeSelect = document.getElementById("columnTypeSelect");
+    columnTypeSelect.value = "text";
+    columns = [];
+    // Close the dialog
+    const dialog = document.getElementById("createTableDialog");
+    dialog.style.display = "none";
+}
 
 
 async function createDatabase(databaseName) {
   const commandString = 'CREATE DATABASE ' + databaseName;
+  const res = await fetch('/api/database/commands', {
+    method: 'POST',
+    headers: {
+        'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({ "text": commandString })
+  });
+  newDatabaseNameInput.value = "";
+  pleaseForTheLoveOfGod();
+}
+
+async function createTable(databaseName) {
+  const commandString = 'CREATE TABLE ' + databaseName + ' (\n  valami INT\n);' ;
   const res = await fetch('/api/database/commands', {
     method: 'POST',
     headers: {
@@ -227,3 +299,5 @@ async function deleteDatabase(databaseName) {
 }
 
 pleaseForTheLoveOfGod()
+
+

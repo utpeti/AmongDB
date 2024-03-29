@@ -193,9 +193,94 @@ textarea::-webkit-scrollbar-thumb {
     background-color: #54698b;
 }
 
+#createTableDialog {
+    display: flex;
+    flex-direction: column;
+    position: fixed;
+    top: 20%;
+    left: 50%;
+    z-index: 50;
+    transform: translate(-50%, -50%);
+    background-color: #CDC2AE;
+    padding: 10px;
+    border: 2px solid #212936;
+    border-radius: 5px;
+    box-shadow: 0 8px 12px rgba(0, 0, 0, 0.1);
+}
+
+#createTableDialog > * {
+    margin-top: 10px;
+  }
+  
+#createTableDialog label {
+    display: block;
+    margin-bottom: 10px;
+    font-family: Mukta-Mahee;
+    color: #ECE5C7;
+    background-color: #354259;
+    position: relative;
+    padding: 10px;
+    border-radius: 5px;
+}
+  
+#createTableDialog input {
+    display: block;
+    width: 94%;
+    padding: 8px;
+    margin-bottom: 10px;
+    border-radius: 5px;
+    border: 1px solid #212936;
+    background-color: #ECE5C7;
+    color: #212936;
+    font-family: Mukta-Mahee;
+    
+}
+  
+#createTableDialog .button-row {
+    display: flex;
+    justify-content: center;
+    margin-top: 20px;
+}
+  
+#createTableDialog .button-fix {
+    padding: 8px 16px;
+    margin: 0 5px;
+    border-radius: 5px;
+    border: 1px solid #ddd;
+    background-color: #354259;
+    color: #CDC2AE;
+    cursor: pointer;
+    transition: background-color 0.2s;
+    font-family: Mukta-Mahee;
+}
+  
+#createTableDialog .button-fix:hover {
+    background-color: #54698b;
+}
+
+#createTableDialog .row {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 10px;
+}
+
+#createTableDialog #columnNameInput {
+    width: 48%;
+}
+
+#createTableDialog #columnTypeSelect {
+    width: 48%;
+}
+
+#createTableDialog .coll-cont {
+    flex-grow: 1;
+  }
+
 .context-menu {
     position: absolute;
     display: none;
+    flex-direction: column;
+    width: auto;
     background-color: #54698b;
     border: 2px solid #212936;
     box-shadow: 2px 2px 5px rgba(0, 0, 0, 0.5);
