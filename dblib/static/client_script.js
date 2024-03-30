@@ -235,11 +235,22 @@ function addColumn() {
   li.appendChild(delButton);
   collList.appendChild(li);
 }
+/* KI KELL JAVITSAM*/
+function checkCollList() {
+  const collInp = document.getElementById("columnNameInput").value.trim();
+  const colls = document.getElementById("coll-list");
+  const existingColl = Array.from(colls.getElementsByTagName("li")).find(li => li.textContent.trim() === collInp)
+  if (!existingColl) {
+    addColumn();
+    return true;
+  }
+  return false;
+}
 
 function createTableDialogOk() {
     const newDatabaseNameInput = document.getElementById("newTableInput");
     if (newDatabaseNameInput.value) {
-        createTable(newDatabaseNameInput.value, columns); //funnction that creates the db
+        createTableFromDialog(newDatabaseNameInput.value); //funnction that creates the db
         // Close the dialog
         const dialog = document.getElementById("createTableDialog");
         dialog.style.display = "none";
@@ -296,6 +307,26 @@ async function deleteDatabase(databaseName) {
     body: JSON.stringify({ "text": commandString })
   });
   pleaseForTheLoveOfGod();
+}
+
+async function createTableFromDialog(tableName) {
+  const columnList = document.getElementById("column-list");
+  const columnElements = Array.from(columnList.getElementsByTagName("li"));
+  const columnDefs = columnElements.map((column, index) => {
+    const columnName = column.textContent;
+    const columnType = column.getElementsByTagName("span")[0].textContent.split(": ")[1];
+    return `${columnName} ${columnType}${index < columnElements.length - 1 ? ", " : ")"}`;
+  }); 
+  const commandString = `CREATE TABLE ${tableName} (${columnDefs.join(" ")})`;
+  console.log(commandString);
+  return true;
+  const res = await fetch('/api/database/commands', { 
+    method: 'POST',
+    headers: {
+        'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({ "text": commandString })
+  });
 }
 
 pleaseForTheLoveOfGod()
