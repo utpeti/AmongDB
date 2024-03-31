@@ -93,8 +93,20 @@ def create_index(indexName: str, tableName: str, column: str) -> str:
         
 ### DOC FUNC ###
 
-def dict_to_string(d):
-    return "#".join(f"{v}" for k, v in d.items())
+def dict_to_string(d) -> str:
+    return "#".join(f"{k}:{v}" for k, v in d.items())
+
+def dict_set_default(d) -> dict:
+    for k, v in d.items():
+        acc = v
+        match v:
+            case "INT":
+                acc = 'NULL'
+            case "BIT":
+                acc = 'NULL'
+                ...
+                #TODO: BEFEJEZNI ES A LIMITACIOKNAL AZ ALAPOT LEKERNI ES BEALLITANI
+                
 
 def insertDoc(tablename: str, dest: str, content: str) -> str:
     msg = ''
