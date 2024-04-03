@@ -96,6 +96,9 @@ def create_index(indexName: str, tableName: str, column: str) -> str:
 def dict_to_string(d) -> str:
     return "#".join(f"{k}:{v}" for k, v in d.items())
 
+def string_to_dict(string) -> dict:
+    return dict(item.split(':') for item in string.split('#'))
+
 def dict_set_default(d) -> dict:
     for k, v in d.items():
         acc = v
