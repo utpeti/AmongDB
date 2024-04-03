@@ -99,15 +99,25 @@ def dict_to_string(d) -> str:
 def string_to_dict(string) -> dict:
     return dict(item.split(':') for item in string.split('#'))
 
+#TYPES = ['INT', 'FLOAT', 'BIT', 'DATE', 'DATETIME', 'VARCHAR']
+
 def dict_set_default(d) -> dict:
+    cpy = {}
     for k, v in d.items():
         acc = v
         match v:
-            case "INT":
+            case 'INT':
                 acc = 'NULL'
-            case "BIT":
+            case 'FLOAT':
                 acc = 'NULL'
-                ...
+            case 'BIT':
+                acc = 'NULL'
+            case 'DATE':
+                acc = 'NULL'
+            case 'DATETIME':
+                acc = 'NULL'
+            case 'VARCHAR':
+                acc = 'NULL'
                 #TODO: BEFEJEZNI ES A LIMITACIOKNAL AZ ALAPOT LEKERNI ES BEALLITANI
                 
 
@@ -122,6 +132,7 @@ def insertDoc(tablename: str, dest: str, content: str) -> str:
         i = 0
         for col in dest:
             if col in struct:
+                #TODO: CHECK DATATYPE 
                 struct[col] = content[i]
             else:
                 return col + ' NOT IN ' + tablename
@@ -129,3 +140,21 @@ def insertDoc(tablename: str, dest: str, content: str) -> str:
         content_string = dict_to_string(struct)
         collection.insert_one({'content': content_string})
     return "worked"
+
+def delete_doc_exact(table_name, col, val):
+    print([table_name,col,val])
+    collection = mydb[table_name]
+    struct = collection.find_one({'_id': 0})
+    if not struct.get(col,False):
+        return "fasz"
+    for document in collection.find():
+        if document['_id'] != 0:
+            acc = string_to_dict(document['content'])
+            if acc[col] == val:
+                collection.delete_one(document) #TUDOM MEGTUDTAM VOLNA DROP MANYVEL IS OLDANI DE IGY FOGTAM NEKI, HAJNALI 3 VAN ES MAR ALUDNI AKAROK HA NEKED EZZEL VAN VALAMI BAJOD AKKOR IRD MEG MAGADNAK VAGY VARDD MEG MIG FELKELEK ES ATIROM EN, AMUGYIS AZ EN BRANCHEMBEN VAN EZ, SO MEG NEM COMPLETE UGY MINT AHOGY EN LETTEM ETTOL COMPLETE NEBUN
+    return "na valami"
+
+
+'''
+delete from test where a = 2;
+'''

@@ -10,6 +10,7 @@ drop_table_regex = re.compile(r'Drop Table (\w+)', re.IGNORECASE)
 create_index_regex = re.compile(r'CREATE INDEX (\w+) ON TABLE (\w+) \((\w+)\)', re.IGNORECASE)
 insert_test = re.compile(r'INSERT INTO (\w+)', re.IGNORECASE)
 insert_doc_regex = re.compile(r'INSERT INTO ([A-Za-z0-9_]+) \(([^)]*)\)\s+VALUES \(([^)]*)\);', re.IGNORECASE)
+delete_doc_regex = re.compile(r'DELETE\s+FROM\s+(\w+)\s+WHERE\s+(\w+)\s*=\s*(\w+)',re.IGNORECASE)
 
 app = Flask(__name__,
             static_url_path="", 
@@ -48,6 +49,13 @@ def sch(command: str):
         columns = match.group(2).split(', ')
         values = match.group(3).split(', ')
         commandMsg = lib.insertDoc(table_name, columns, values)
+    elif delete_doc_regex.match(command):
+        print('jaja')
+        match = delete_doc_regex.search(command)
+        table_name = match.group(1).strip()
+        col_name = match.group(2).strip()
+        val = match.group(3).strip()
+        commandMsg = lib.delete_doc_exact(table_name, col_name, val)
         
     print(commandMsg)
     return commandMsg
