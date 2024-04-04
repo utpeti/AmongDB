@@ -1,12 +1,16 @@
 import pymongo
 from pymongo import MongoClient
+import re
 
 cluster = MongoClient('mongodb+srv://korposb:1234@amongdb.xrci9ew.mongodb.net/?retryWrites=true&w=majority&appName=AmongDB')
 mydb = cluster["matyi_test"]
 
 TYPES = ['INT', 'FLOAT', 'BIT', 'DATE', 'DATETIME', 'VARCHAR']
+primary_key_regex = re.compile(r'\s+PRIMARY\s+KEY\s+\((\w+)\)', re.IGNORECASE)
 
 ### TABLE FUNCTIONS: ###
+
+#TODO: check if keyvalue exists
 
 def create_table(name: str, content: str) -> str:
     if name in mydb.list_collection_names():
@@ -17,10 +21,18 @@ def create_table(name: str, content: str) -> str:
     tablestruct = {}
     tablestruct['_id'] = 0
     for line in content.splitlines()[1:-1]:
+        print(line)
+        if primary_key_regex.match(line):
+            match = primary_key_regex.search(line)
+            print(match.group(1))
+            tablestruct['KeyValue'] = match.group(1)
         line = list(filter(None,line.strip(',').split(' ')))
         if line[1] in TYPES:
             tablestruct[line[0].strip()] = line[1]
     mycol.insert_one(tablestruct)
+    indexstruct = {}
+    indexstruct['_id'] = -1
+    mycol.insert_one(indexstruct)
     msg = "TABLE " + name + " CREATED!"
     return msg
         
@@ -89,7 +101,34 @@ def create_index(indexName: str, tableName: str, column: str) -> str:
     else:
         msg = "NO TABLE NAMED " + tableName + "!"
     return msg
+
+def create_index2(indexName: str, tableName: str, column: str) -> str:
+    column = column[0]
+    if tableName in mydb.list_collection_names():
+        collection = mydb[tableName]
+        document = collection.find_one({'_id': 0})
+        if column.strip() not in document:
+            msg = "NO COLUMN NAMED " + column + "!"
+            return msg
+        somethingisfucked(indexName, collection, column)
+        #collection.create_index(column, name=str(indexName)) #maybe nem kell castelni, de igy megy so igy hagyom aztan ott rohad meg valoszinu
+        msg = "INDEX " + indexName + " CREATED ON TABLE " + tableName + " FOR COLUMN: " + column
+    else:
+        msg = "NO TABLE NAMED " + tableName + "!"
+    return msg
         
+def somethingisfucked(indexName: str, collection, column):
+    indexes = collection.find_one({'_id': -1})
+    if indexName in indexes:
+        return 'INDEX ALLREADY EXISTS'
+    l = []
+    for document in collection.find():
+        if document['_id'] not in [0,-1]:
+            acc_dict = string_to_dict(document['content'])
+            l.append([document['KeyValue'],acc_dict[column]])
+    l.sort(key=lambda x: x[1])
+    acc_string = '#'.join(x[0] for x in l)
+    collection.update_one(indexes, {'$set': {indexName: acc_string} })
         
 ### DOC FUNC ###
 
@@ -129,16 +168,22 @@ def insertDoc(tablename: str, dest: str, content: str) -> str:
         collection = mydb[tablename]
         struct = collection.find_one({'_id': 0})
         struct.pop('_id')
+        keyVal = 0
         i = 0
         for col in dest:
             if col in struct:
                 #TODO: CHECK DATATYPE 
-                struct[col] = content[i]
+                if col == struct['KeyValue']:
+                    keyVal = content[i]
+                    struct.pop(col)
+                else:
+                    struct[col] = content[i]
             else:
                 return col + ' NOT IN ' + tablename
             i += 1
+        struct.pop('KeyValue')
         content_string = dict_to_string(struct)
-        collection.insert_one({'content': content_string})
+        collection.insert_one({'KeyValue' : keyVal,'content': content_string})
     return "worked"
 
 def delete_doc_exact(table_name, col, val):

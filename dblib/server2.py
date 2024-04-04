@@ -7,7 +7,7 @@ create_database_regex = re.compile(r'Create Database (\w+)', re.IGNORECASE)
 drop_database_regex = re.compile(r'Drop Database (\w+)', re.IGNORECASE)
 create_table_regex = re.compile(r'Create Table (\w+)', re.IGNORECASE)
 drop_table_regex = re.compile(r'Drop Table (\w+)', re.IGNORECASE)
-create_index_regex = re.compile(r'CREATE INDEX (\w+) ON TABLE (\w+) \((\w+)\)', re.IGNORECASE)
+create_index_regex = re.compile(r'CREATE\s+INDEX\s+(\w+)\s+ON\s+(\w+) \((\w+)\)', re.IGNORECASE)
 insert_test = re.compile(r'INSERT INTO (\w+)', re.IGNORECASE)
 insert_doc_regex = re.compile(r'INSERT INTO ([A-Za-z0-9_]+) \(([^)]*)\)\s+VALUES \(([^)]*)\);', re.IGNORECASE)
 delete_doc_regex = re.compile(r'DELETE\s+FROM\s+(\w+)\s+WHERE\s+(\w+)\s*=\s*(\w+)',re.IGNORECASE)
@@ -41,7 +41,7 @@ def sch(command: str):
         index_name = match.group(1)
         table_name = match.group(2)
         columns = match.group(3).split(', ')
-        commandMsg = lib.create_index(index_name, table_name, columns)
+        commandMsg = lib.create_index2(index_name, table_name, columns)
     elif insert_doc_regex.match(command):
         commandMsg = 'koszi'
         match = insert_doc_regex.search(command)
