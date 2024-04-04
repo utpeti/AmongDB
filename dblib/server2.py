@@ -24,6 +24,9 @@ def get_databases():
 
 def sch(command: str):
     commandMsg = "Command not known"
+    if(command == 'trust'):
+        lib.trust()
+        return 'you trusted'
     if create_database_regex.match(command):
         valami = create_database_regex.search(command)
         commandMsg = lib.create_database(valami.group(1))

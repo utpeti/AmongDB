@@ -1,6 +1,8 @@
 import pymongo
 from pymongo import MongoClient
 import re
+import random
+import time
 
 cluster = MongoClient('mongodb+srv://korposb:1234@amongdb.xrci9ew.mongodb.net/?retryWrites=true&w=majority&appName=AmongDB')
 mydb = cluster["matyi_test"]
@@ -163,6 +165,7 @@ def dict_set_default(d) -> dict:
 def insertDoc(tablename: str, dest: str, content: str) -> str:
     msg = ''
     if len(dest) != len(content):
+        print('hossz hiba')
         return "COLUMNS AND VALUES SHOULD HAVE THE SAME AMOUNT"
     if tablename in mydb.list_collection_names():
         collection = mydb[tablename]
@@ -184,10 +187,10 @@ def insertDoc(tablename: str, dest: str, content: str) -> str:
         struct.pop('KeyValue')
         content_string = dict_to_string(struct)
         collection.insert_one({'KeyValue' : keyVal,'content': content_string})
+    print('idk')
     return "worked"
 
 def delete_doc_exact(table_name, col, val):
-    print([table_name,col,val])
     collection = mydb[table_name]
     struct = collection.find_one({'_id': 0})
     if not struct.get(col,False):
@@ -199,6 +202,15 @@ def delete_doc_exact(table_name, col, val):
                 collection.delete_one(document) #TUDOM MEGTUDTAM VOLNA DROP MANYVEL IS OLDANI DE IGY FOGTAM NEKI, HAJNALI 3 VAN ES MAR ALUDNI AKAROK HA NEKED EZZEL VAN VALAMI BAJOD AKKOR IRD MEG MAGADNAK VAGY VARDD MEG MIG FELKELEK ES ATIROM EN, AMUGYIS AZ EN BRANCHEMBEN VAN EZ, SO MEG NEM COMPLETE UGY MINT AHOGY EN LETTEM ETTOL COMPLETE NEBUN
     return "na valami"
 
+
+def trust():
+    for i in range(1024):
+        dest = ['a','b','c','d','e','f','g']
+        my_list = [random.randint(10, 10000) for _ in range(7)]
+        my_list[0] = i
+        my_list = [str(x) for x in my_list]
+        insertDoc('teszt', dest, my_list)
+        print(i)
 
 '''
 delete from test where a = 2;
