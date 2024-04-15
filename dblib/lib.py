@@ -15,6 +15,7 @@ def create_table(name: str, content: str) -> str:
     mycol = mydb[name]
     # CREATING DICT FROM CONTENT
     tablestruct = {}
+    tablestruct['_id'] = 0
     for line in content.splitlines()[1:-1]:
         line = list(filter(None,line.strip(',').split(' ')))
         if line[1] in TYPES:
@@ -89,3 +90,39 @@ def create_index(indexName: str, tableName: str, column: str) -> str:
         msg = "NO TABLE NAMED " + tableName + "!"
     return msg
         
+        
+### DOC FUNC ###
+
+def dict_to_string(d) -> str:
+    return "#".join(f"{k}:{v}" for k, v in d.items())
+
+def dict_set_default(d) -> dict:
+    for k, v in d.items():
+        acc = v
+        match v:
+            case "INT":
+                acc = 'NULL'
+            case "BIT":
+                acc = 'NULL'
+                ...
+                #TODO: BEFEJEZNI ES A LIMITACIOKNAL AZ ALAPOT LEKERNI ES BEALLITANI
+                
+
+def insertDoc(tablename: str, dest: str, content: str) -> str:
+    msg = ''
+    if len(dest) != len(content):
+        return "COLUMNS AND VALUES SHOULD HAVE THE SAME AMOUNT"
+    if tablename in mydb.list_collection_names():
+        collection = mydb[tablename]
+        struct = collection.find_one({'_id': 0})
+        struct.pop('_id')
+        i = 0
+        for col in dest:
+            if col in struct:
+                struct[col] = content[i]
+            else:
+                return col + ' NOT IN ' + tablename
+            i += 1
+        content_string = dict_to_string(struct)
+        collection.insert_one({'content': content_string})
+    return "worked"

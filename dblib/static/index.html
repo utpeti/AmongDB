@@ -9,17 +9,13 @@
         <header>
             AmongDB
         </header>
-        <div class="fixed-button-container">
+        <div class="button-container">
             <input class="button-fix" type="submitButton" value="Submit" onclick = "return sendSomething(event)"><br>
             <button class="button-fix" type="button" id="refreshBtn" onclick="return pleaseForTheLoveOfGod()">Refresh</button>
-            <button class="button-fix" type="createButton" id="createBtn" onclick="return createDatabaseDialog()">+</button>
-        </div>
-        <div class="button-container">
+            <button class="button-fix" type="createButton" id="createBtn" onclick="return createDatabaseDialog()">Create Database</button>
             <ul id="dbList">
                 <li id="dbListPlaceholder">Please click 'Refresh' to load databases.</li>
             </ul>
-        </div>
-        <div class="li-table"> 
             <ul id="tableList">
                 <li id="tableListPlaceholer">Please select a database to load its tables.</li>
             </ul>
@@ -42,4 +38,34 @@
         <button class="dialog-button button-fix" onclick="createDatabaseDialogOk()">Ok</button>
         <button class="dialog-button button-fix" onclick="createDatabaseDialogCancel()">Cancel</button>
     </div>
+</div>
+
+<div id="createTableDialog" class="dialog">
+    <div>
+        <label for="">Create a new table</label>
+        <input id="newTableInput" type="text" />
+    </div>
+    <div class="button-row">
+        <button class="dialog-button button-fix" onclick="return createTableDialogOk()">Ok</button>
+        <button class="dialog-button button-fix" onclick="return createTableDialogCancel()">Cancel</button>
+    </div>
+    <div>
+        <label for="">Column Name:</label>
+        <input id="columnNameInput" type="text" />
+        <select id="columnTypeSelect">
+            <option value="INT">INT</option>
+            <option value="FLOAT">FLOAT</option>
+            <option value="BIT">BIT</option>
+            <option value="DATE">DATE</option>
+            <option value="DATETIME">DATETIME</option>
+            <option value="VARCHAR">VARCHAR</option>
+        </select>
+        <button class="button-fix" onclick="return checkCollList()">+</button>
+    </div>
+    <div class="coll-cont">
+        <ul id="coll-list">
+            <li id="coll-placeholder">Please add a new coll</li>
+        </ul>
+    </div>
+    
 </div>

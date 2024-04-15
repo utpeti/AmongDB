@@ -8,6 +8,8 @@ drop_database_regex = re.compile(r'Drop Database (\w+)', re.IGNORECASE)
 create_table_regex = re.compile(r'Create Table (\w+)', re.IGNORECASE)
 drop_table_regex = re.compile(r'Drop Table (\w+)', re.IGNORECASE)
 create_index_regex = re.compile(r'CREATE INDEX (\w+) ON TABLE (\w+) \((\w+)\)', re.IGNORECASE)
+insert_test = re.compile(r'INSERT INTO (\w+)', re.IGNORECASE)
+insert_doc_regex = re.compile(r'INSERT INTO ([A-Za-z0-9_]+) \(([^)]*)\)\s+VALUES \(([^)]*)\);', re.IGNORECASE)
 
 app = Flask(__name__,
             static_url_path="", 
@@ -39,6 +41,14 @@ def sch(command: str):
         table_name = match.group(2)
         columns = match.group(3).split(', ')
         commandMsg = lib.create_index(index_name, table_name, columns)
+    elif insert_doc_regex.match(command):
+        commandMsg = 'koszi'
+        match = insert_doc_regex.search(command)
+        table_name = match.group(1)
+        columns = match.group(2).split(', ')
+        values = match.group(3).split(', ')
+        commandMsg = lib.insertDoc(table_name, columns, values)
+        
     print(commandMsg)
     return commandMsg
         
@@ -53,8 +63,11 @@ def select_curr_database():
     lib.select_curr_database(name['curr_db'])
     return ""
 
-
 @app.route("/api/table/table_list", methods=['GET'])
 def send_tables():
     tables = lib.list_tables()
     return jsonify(tables)
+
+
+if __name__ == "__main__":
+    app.run(host='0.0.0.0')

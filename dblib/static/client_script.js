@@ -55,16 +55,16 @@ async function sendSomething(event) {
   console.log('please2')
   const text = document.getElementById('large_text_field').value;
   const res = await fetch('/api/database/commands', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json'
-    },
-    body: JSON.stringify({ "text": text })
+      method: 'POST',
+      headers: {
+          'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ "text": text })
   });
   const data = await res.text();
   document.getElementById('large_text_field').value = '';
   console.log(data);
-  document.getElementById('large_message_field').value += data + '\n';
+  document.getElementById('large_message_field').value += data + '\n' ;
   pleaseForTheLoveOfGod();
   pleaseForTheLoveOfGod2();
   // const myjson = await res.json();
@@ -76,10 +76,10 @@ async function sendSomething(event) {
 async function pleaseForTheLoveOfGod() {
   console.log('please1')
   const listContent = await fetch('/api/database/db_list', {
-    method: 'GET',
-    headers: {
-      'Content-Type': 'application/json'
-    }
+      method: 'GET',
+      headers: {
+          'Content-Type' : 'application/json'
+      }
   });
   console.log(listContent);
   populateList(await listContent.json());
@@ -89,26 +89,66 @@ function populateList(databases) {
   const dbList = document.getElementById('dbList');
   dbList.innerHTML = '';
   databases.forEach(database => {
-    const button = document.createElement('button');
-    button.textContent = database;
-    button.textContent = database;
-    button.dataset.value = database;
-    button.addEventListener('click', () => {
-      selectCurrDB(button.textContent);
+    const dbButton = document.createElement('button');
+    dbButton.textContent = database;
+    dbButton.textContent = database;
+    dbButton.dataset.value = database;
+    dbButton.addEventListener('click', () => {
+      selectCurrDB(dbButton.textContent);
     });
-    button.classList.add('button');
-    dbList.appendChild(button);
-  });
+    dbButton.classList.add('button');
+    /*NAJO OMGOMGOMGOMGOGMMOMGMOMGGMGOMGG ---- MAJD KI KELL VEGYEM KULON FUGGVENYBE*/
+    const contextMenu = document.createElement('div');
+    contextMenu.classList.add('context-menu');
+    const deleteButton = document.createElement('button');
+    deleteButton.textContent = 'Drop Database';
+    deleteButton.classList.add('context-menu-button');
+    deleteButton.dataset.value = database;
+    deleteButton.addEventListener('click', () => {
+      deleteDatabase(deleteButton.dataset.value);
+      contextMenu.style.display = 'none';
+    });
+    contextMenu.appendChild(deleteButton);
+
+    const createTable = document.createElement('button');
+    createTable.textContent = 'Create Table';
+    createTable.classList.add('context-menu-button');
+    createTable.dataset.value = database;
+    createTable.addEventListener('click', () => {
+      createTableDialog();
+      contextMenu.style.display = 'none';
+    });
+    contextMenu.appendChild(createTable);
+
+    document.body.appendChild(contextMenu);
+    dbButton.addEventListener('contextmenu', (e) => {
+      e.preventDefault();
+      contextMenu.style.left = e.clientX + 'px';
+      contextMenu.style.top = e.clientY + 'px';
+      contextMenu.style.display = 'block';
+      contextMenu.style.flexDirection = 'row';
+      document.addEventListener('click', hideContextMenu);
+    });
+    dbList.appendChild(dbButton);
+});
+}
+
+function hideContextMenu(e) {
+  const contextMenu = document.querySelector('.context-menu');
+  if (!contextMenu.contains(e.target)) {
+    contextMenu.style.display = 'none';
+    document.removeEventListener('click', hideContextMenu);
+  }
 }
 
 async function selectCurrDB(name) {
   console.log('please4')
   const res = await fetch('/api/database/select_db', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json'
-    },
-    body: JSON.stringify({ "curr_db": name })
+      method: 'POST',
+      headers: {
+          'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ "curr_db": name })
   });
   deselectAllButtons();
   document.querySelector(`button[data-value="${name}"].button`).classList.add('active');
@@ -128,10 +168,10 @@ function deselectAllButtons() {
 async function pleaseForTheLoveOfGod2() {
   console.log('please3')
   const listContent = await fetch('/api/table/table_list', {
-    method: 'GET',
-    headers: {
-      'Content-Type': 'application/json'
-    }
+      method: 'GET',
+      headers: {
+          'Content-Type' : 'application/json'
+      }
   });
   populateTableList(await listContent.json());
 }
@@ -147,6 +187,7 @@ function populateTableList(tables) {
 }
 
 //--------------------DIALOG---------------------
+//--------------------CR DB DIALOG---------------------
 function createDatabaseDialog() {
   const dialog = document.getElementById("createDatabaseDialog");
   dialog.style.display = "block";
@@ -162,7 +203,7 @@ function createDatabaseDialogOk() {
   }
 }
 
-function createDatabaseDialogCancel() {
+function createTableDialogCancel() {
   const newDatabaseNameInput = document.getElementById("newDatabaseNameInput");
   newDatabaseNameInput.value = "";
   // Close the dialog
@@ -170,6 +211,64 @@ function createDatabaseDialogCancel() {
   dialog.style.display = "none";
 }
 
+//--------------------CR TABLE DIALOG---------------------
+function createTableDialog() {
+  const dialog = document.getElementById("createTableDialog");
+  dialog.style.display = "block";
+}
+
+function addColumn() {
+  const collInp = document.getElementById("columnNameInput").value;
+  const type = document.getElementById("columnTypeSelect").value;
+  const collList = document.getElementById("coll-list");
+  const li = document.createElement('li');
+  li.textContent = collInp;
+  const typeSpan = document.createElement('span');
+  typeSpan.textContent = `Type: ${type}`;
+  typeSpan.style.marginLeft = '10px';
+  li.appendChild(typeSpan);
+  const delButton = document.createElement('button');
+  delButton.textContent = '-';
+  delButton.onclick = () => {
+    li.remove();
+  }
+  li.appendChild(delButton);
+  collList.appendChild(li);
+}
+/* KI KELL JAVITSAM*/
+function checkCollList() {
+  const collInp = document.getElementById("columnNameInput").value.trim();
+  const colls = document.getElementById("coll-list");
+  const existingColl = Array.from(colls.getElementsByTagName("li")).find(li => li.textContent.trim() === collInp)
+  if (!existingColl) {
+    addColumn();
+    return true;
+  }
+  return false;
+}
+
+function createTableDialogOk() {
+    const newDatabaseNameInput = document.getElementById("newTableInput");
+    if (newDatabaseNameInput.value) {
+        createTableFromDialog(newDatabaseNameInput.value); //funnction that creates the db
+        // Close the dialog
+        const dialog = document.getElementById("createTableDialog");
+        dialog.style.display = "none";
+    }
+}
+
+function createTableDialogCancel() {
+    const newDatabaseNameInput = document.getElementById("newTableInput");
+    newDatabaseNameInput.value = "";
+    const columnNameInput = document.getElementById("columnNameInput");
+    columnNameInput.value = "";
+    const columnTypeSelect = document.getElementById("columnTypeSelect");
+    columnTypeSelect.value = "text";
+    columns = [];
+    // Close the dialog
+    const dialog = document.getElementById("createTableDialog");
+    dialog.style.display = "none";
+}
 
 
 async function createDatabase(databaseName) {
@@ -177,7 +276,7 @@ async function createDatabase(databaseName) {
   const res = await fetch('/api/database/commands', {
     method: 'POST',
     headers: {
-      'Content-Type': 'application/json'
+        'Content-Type': 'application/json'
     },
     body: JSON.stringify({ "text": commandString })
   });
@@ -185,4 +284,50 @@ async function createDatabase(databaseName) {
   pleaseForTheLoveOfGod();
 }
 
+async function createTable(databaseName) {
+  const commandString = 'CREATE TABLE ' + databaseName + ' (\n  valami INT\n);' ;
+  const res = await fetch('/api/database/commands', {
+    method: 'POST',
+    headers: {
+        'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({ "text": commandString })
+  });
+  newDatabaseNameInput.value = "";
+  pleaseForTheLoveOfGod();
+}
+
+async function deleteDatabase(databaseName) {
+  const commandString = 'DROP DATABASE ' + databaseName;
+  const res = await fetch('/api/database/commands', {
+    method: 'POST',
+    headers: {
+        'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({ "text": commandString })
+  });
+  pleaseForTheLoveOfGod();
+}
+
+async function createTableFromDialog(tableName) {
+  const columnList = document.getElementById("column-list");
+  const columnElements = Array.from(columnList.getElementsByTagName("li"));
+  const columnDefs = columnElements.map((column, index) => {
+    const columnName = column.textContent;
+    const columnType = column.getElementsByTagName("span")[0].textContent.split(": ")[1];
+    return `${columnName} ${columnType}${index < columnElements.length - 1 ? ", " : ")"}`;
+  }); 
+  const commandString = `CREATE TABLE ${tableName} (${columnDefs.join(" ")})`;
+  console.log(commandString);
+  return true;
+  const res = await fetch('/api/database/commands', { 
+    method: 'POST',
+    headers: {
+        'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({ "text": commandString })
+  });
+}
+
 pleaseForTheLoveOfGod()
+
