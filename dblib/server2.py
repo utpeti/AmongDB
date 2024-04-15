@@ -17,6 +17,8 @@ app = Flask(__name__,
             static_folder='static')
 
 
+
+
 @app.route("/api/database/commands", methods=['POST'])
 def get_databases():
     valami = request.json

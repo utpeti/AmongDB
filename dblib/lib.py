@@ -1,8 +1,7 @@
-import pymongo
 from pymongo import MongoClient
 import re
 import random
-import time
+from datetime import datetime
 
 cluster = MongoClient('mongodb+srv://korposb:1234@amongdb.xrci9ew.mongodb.net/?retryWrites=true&w=majority&appName=AmongDB')
 mydb = cluster["matyi_test"]
@@ -173,22 +172,25 @@ def insertDoc(tablename: str, dest: str, content: str) -> str:
         struct.pop('_id')
         keyVal = 0
         i = 0
+        msg = ''
         for col in dest:
             if col in struct:
-                #TODO: CHECK DATATYPE 
+                #TODO: CHECK DATATYPE
+                if typecheck(content[i], struct[col]):
+                    msg += f' {content[i]} = {struct[col]} ' 
                 if col == struct['KeyValue']:
                     keyVal = content[i]
                     struct.pop(col)
                 else:
                     struct[col] = content[i]
             else:
-                return col + ' NOT IN ' + tablename
+                return col + ' NOT IN ' + tablename + msg
             i += 1
         struct.pop('KeyValue')
         content_string = dict_to_string(struct)
         collection.insert_one({'KeyValue' : keyVal,'content': content_string})
     print('idk')
-    return "worked"
+    return msg
 
 def delete_doc_exact(table_name, col, val):
     collection = mydb[table_name]
@@ -211,6 +213,46 @@ def trust():
         my_list = [str(x) for x in my_list]
         insertDoc('teszt', dest, my_list)
         print(i)
+
+#passek helyett majd valami error uzenetet berakok
+
+def typecheck(val, typ:str):
+    print([val,typ])
+    match typ:
+        case 'INT':
+            try:
+                int(val)
+                return True
+            except ValueError:
+                pass
+        case 'FLOAT':
+            try:
+                float(val)
+                return True
+            except ValueError:
+                pass
+        case 'BIT':
+            try:
+                bool(val)
+                return True
+            except ValueError:
+                pass
+        case 'DATE':
+            try:
+                datetime.strptime(val, '%Y/%m/%d')
+                return True
+            except ValueError:
+                pass
+        case 'DATETIME':
+            try:
+                datetime.strptime(val, '%Y/%m/%d %H:%M:%S')
+                return True
+            except ValueError:
+                pass
+        case 'VARCHAR':
+            return True
+    return False
+
 
 '''
 delete from test where a = 2;
