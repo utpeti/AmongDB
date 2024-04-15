@@ -102,10 +102,43 @@ def create_index(indexName: str, tableName: str, column: str) -> str:
     else:
         msg = "NO TABLE NAMED " + tableName + "!"
     return msg
-<<<<<<< HEAD
         
-=======
+        
+### DOC FUNC ###
 
+def dict_to_string(d) -> str:
+    return "#".join(f"{k}:{v}" for k, v in d.items())
+
+def dict_set_default(d) -> dict:
+    for k, v in d.items():
+        acc = v
+        match v:
+            case "INT":
+                acc = 'NULL'
+            case "BIT":
+                acc = 'NULL'
+                ...
+                #TODO: BEFEJEZNI ES A LIMITACIOKNAL AZ ALAPOT LEKERNI ES BEALLITANI
+                
+
+def insertDoc(tablename: str, dest: str, content: str) -> str:
+    msg = ''
+    if len(dest) != len(content):
+        return "COLUMNS AND VALUES SHOULD HAVE THE SAME AMOUNT"
+    if tablename in mydb.list_collection_names():
+        collection = mydb[tablename]
+        struct = collection.find_one({'_id': 0})
+        struct.pop('_id')
+        i = 0
+        for col in dest:
+            if col in struct:
+                struct[col] = content[i]
+            else:
+                return col + ' NOT IN ' + tablename
+            i += 1
+        content_string = dict_to_string(struct)
+        collection.insert_one({'content': content_string})
+    return "worked"
 def create_index2(indexName: str, tableName: str, column: str) -> str:
     column = column[0]
     if tableName in mydb.list_collection_names():
@@ -133,24 +166,12 @@ def somethingisfucked(indexName: str, collection, column):
     l.sort(key=lambda x: x[1])
     acc_string = '#'.join(x[0] for x in l)
     collection.update_one(indexes, {'$set': {indexName: acc_string} })
->>>>>>> d72ab6d2801533d476b460a44c60d69e82dd2c91
         
 ### DOC FUNC ###
 
 def dict_to_string(d) -> str:
     return "#".join(f"{k}:{v}" for k, v in d.items())
 
-<<<<<<< HEAD
-def dict_set_default(d) -> dict:
-    for k, v in d.items():
-        acc = v
-        match v:
-            case "INT":
-                acc = 'NULL'
-            case "BIT":
-                acc = 'NULL'
-                ...
-=======
 def string_to_dict(string) -> dict:
     return dict(item.split(':') for item in string.split('#'))
 
@@ -173,34 +194,18 @@ def dict_set_default(d) -> dict:
                 acc = 'NULL'
             case 'VARCHAR':
                 acc = 'NULL'
->>>>>>> d72ab6d2801533d476b460a44c60d69e82dd2c91
                 #TODO: BEFEJEZNI ES A LIMITACIOKNAL AZ ALAPOT LEKERNI ES BEALLITANI
                 
 
 def insertDoc(tablename: str, dest: str, content: str) -> str:
     msg = ''
     if len(dest) != len(content):
-<<<<<<< HEAD
-=======
         print('hossz hiba')
->>>>>>> d72ab6d2801533d476b460a44c60d69e82dd2c91
         return "COLUMNS AND VALUES SHOULD HAVE THE SAME AMOUNT"
     if tablename in mydb.list_collection_names():
         collection = mydb[tablename]
         struct = collection.find_one({'_id': 0})
         struct.pop('_id')
-<<<<<<< HEAD
-        i = 0
-        for col in dest:
-            if col in struct:
-                struct[col] = content[i]
-            else:
-                return col + ' NOT IN ' + tablename
-            i += 1
-        content_string = dict_to_string(struct)
-        collection.insert_one({'content': content_string})
-    return "worked"
-=======
         keyVal = 0
         i = 0
         msg = ''
@@ -288,4 +293,3 @@ def typecheck(val, typ:str):
 '''
 delete from test where a = 2;
 '''
->>>>>>> d72ab6d2801533d476b460a44c60d69e82dd2c91
