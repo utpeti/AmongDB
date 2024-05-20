@@ -11,13 +11,11 @@ create_index_regex = re.compile(r'CREATE\s+INDEX\s+(\w+)\s+ON\s+(\w+) \((\w+)\)'
 insert_test = re.compile(r'INSERT INTO (\w+)', re.IGNORECASE)
 insert_doc_regex = re.compile(r'INSERT INTO ([A-Za-z0-9_]+) \(([^)]*)\)\s+VALUES \(([^)]*)\);', re.IGNORECASE)
 delete_doc_regex = re.compile(r'DELETE\s+FROM\s+(\w+)\s+WHERE\s+(\w+)\s*=\s*(\w+)',re.IGNORECASE)
+inner_join_regex = re.compile(r'FROM\s([A-Za-z0-9_]+)\s+JOIN\s+([A-Za-z0-9_]+)\s+ON\s+([A-Za-z0-9_]+)\s+=\s+([A-Za-z0-9_]+)', re.IGNORECASE)
 
 app = Flask(__name__,
             static_url_path="", 
             static_folder='static')
-
-
-
 
 @app.route("/api/database/commands", methods=['POST'])
 def get_databases():
@@ -61,7 +59,13 @@ def sch(command: str):
         col_name = match.group(2).strip()
         val = match.group(3).strip()
         commandMsg = lib.delete_doc_exact(table_name, col_name, val)
-        
+    elif inner_join_regex.match(command):
+        match = inner_join_regex.search(command)
+        table1 = match.group(1)
+        table2 = match.group(2)
+        col1 = match.group(3)
+        col2 = match.group(4)
+        commandMsg = lib.first_inner_join(table1, table2, col1, col2)
     print(commandMsg)
     return commandMsg
         
@@ -82,5 +86,5 @@ def send_tables():
     return jsonify(tables)
 
 
-if __name__ == "__main__":
-    app.run(host='0.0.0.0')
+#if __name__ == "__main__":
+#    app.run(host='0.0.0.0')

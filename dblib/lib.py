@@ -8,6 +8,8 @@ mydb = cluster["matyi_test"]
 
 TYPES = ['INT', 'FLOAT', 'BIT', 'DATE', 'DATETIME', 'VARCHAR']
 primary_key_regex = re.compile(r'\s+PRIMARY\s+KEY\s+\((\w+)\)', re.IGNORECASE)
+foreign_key_regex = re.compile(r'\s+FOREIGN\s+KEY\s+\((\w+)\)', re.IGNORECASE)
+unique_key_regex = re.compile(r'\s+UNIQUE\s+KEY\s+\((\w+)\)', re.IGNORECASE)
 
 ### TABLE FUNCTIONS: ###
 
@@ -21,12 +23,33 @@ def create_table(name: str, content: str) -> str:
     # CREATING DICT FROM CONTENT
     tablestruct = {}
     tablestruct['_id'] = 0
+    uniquestruct = {}
+    uniquestruct['_id'] = -3
     for line in content.splitlines()[1:-1]:
-        print(line)
+        line.strip(',')
         if primary_key_regex.match(line):
             match = primary_key_regex.search(line)
-            print(match.group(1))
             tablestruct['KeyValue'] = match.group(1)
+            uniquestruct[match.group(1)] = 0
+        elif foreign_key_regex.match(line):
+            match = foreign_key_regex.search(line)
+            got_one = False
+            #SEARCH FOR TABLE WHERE var IS PRIMARY KEY
+            for table_name in mydb.list_collection_names() :
+                try:
+                    table = mydb[table_name]
+                    table = table.find_one({'_id' : 0})
+                    if table['KeyValue'] == match.group(1):
+                        got_one = True
+                        print('megkapta')
+                        break
+                except:
+                    ...
+        elif unique_key_regex.match(line):
+            match = unique_key_regex.search(line)
+            if match.group(1) in tablestruct.keys():
+                uniquestruct[match.group(1)] = 0
+
         line = list(filter(None,line.strip(',').split(' ')))
         if line[1] in TYPES:
             tablestruct[line[0].strip()] = line[1]
@@ -34,6 +57,7 @@ def create_table(name: str, content: str) -> str:
     indexstruct = {}
     indexstruct['_id'] = -1
     mycol.insert_one(indexstruct)
+    mycol.insert_one(uniquestruct)
     msg = "TABLE " + name + " CREATED!"
     return msg
         
@@ -85,7 +109,53 @@ def list_databases():
 def select_curr_database(name: str) -> None:
     global mydb
     mydb = cluster[name]
-    
+
+### JOIN ###
+
+
+def first_inner_join(table1: str, table2: str, col1: str, col2: str):
+    index = ''
+    def index_srch(indexes: dict, col: str):
+        global index
+        for val in indexes.values():
+            print([val,col])
+            if str(val).startswith(col):
+                index = val
+                return True
+        return False
+
+    if table1 in mydb.list_collection_names() and table2 in mydb.list_collection_names():
+        table1 = mydb[table1]
+        table2 = mydb[table2]
+        table_struct1 = table1.find_one({'_id': 0})
+        table_struct2 = table2.find_one({'_id': 0})
+        if col1 in table_struct1.keys() and col2 in table_struct2.keys():
+            indexes1 = table1.find_one({'_id': -1})
+            indexes2 = table2.find_one({'_id': -1})
+            if index_srch(indexes1, col1):
+                print(index)
+                for doc in table2.find({}):
+                    if doc['_id'] not in [0,-1,-3]:
+                        col_val = string_to_dict(doc['content'])[col2]
+                        print(type(col_val))
+                        i = index.find(col_val)
+                        if index[i-1] == '#':
+                            i2 = index.find('$', i)
+            elif index_srch(indexes2, col2):
+                ...
+            else:
+                ...
+        else:
+            if col1 not in table_struct1.keys():
+                return f'{col1} DOESN\'T EXIST'
+            else:
+                return f'{col2} DOESN\'T EXIST'
+    else:
+        if table1 not in mydb.list_collection_names():
+            return f'{table1} DOESN\'T EXIST'
+        else:
+            return f'{table2} DOESN\'T EXIST'
+    return 'ja'
 
 ### INDEX FUNCTIONS: ###
 
@@ -102,25 +172,60 @@ def create_index(indexName: str, tableName: str, column: str) -> str:
     else:
         msg = "NO TABLE NAMED " + tableName + "!"
     return msg
+
+def somethingisfucked2(indexName: str, collection, column):
+    indexes = collection.find_one({'_id': -1})
+    if indexName in indexes:
+        return 'INDEX ALLREADY EXISTS'
+    l = []
+    for document in collection.find():
+        if document['_id'] not in [0,-1,-3]:
+            acc_dict = string_to_dict(document['content'])
+            l.append([document['KeyValue'],acc_dict[column]])
+    l.sort(key=lambda x: x[1])
+    acc_string = '#'.join(x[0] for x in l)
+    collection.update_one(indexes, {'$set': {indexName: acc_string} })
+    
+def somethingisfucked(indexName: str, collection, column):
+    indexes = collection.find_one({'_id': -1})
+    if indexName in indexes:
+        return 'INDEX ALLREADY EXISTS'
+    l = []
+    for document in collection.find():
+        if document['_id'] not in [0,-1,-3]:
+            acc_dict = string_to_dict(document['content'])
+            l.append([document['KeyValue'],acc_dict[column]])
+    l.sort(key=lambda x: x[1])
+    #acc_string = '#'.join(x[0] for x in l)
+    acc_string = f'{column}'
+    prev_val = False
+    for key, val in l:
+        if val == prev_val:
+            acc_string += f'ඞ{key}'
+        else:
+            acc_string += f'#{val}${key}'
+        prev_val = val
+    collection.update_one(indexes, {'$set': {indexName: acc_string} })
+
+
+def create_index2(indexName: str, tableName: str, column: str) -> str:
+    column = column[0]
+    if tableName in mydb.list_collection_names():
+        collection = mydb[tableName]
+        document = collection.find_one({'_id': 0})
+        if column.strip() not in document:
+            msg = "NO COLUMN NAMED " + column + "!"
+            return msg
+        somethingisfucked(indexName, collection, column)
+        #collection.create_index(column, name=str(indexName)) #maybe nem kell castelni, de igy megy so igy hagyom aztan ott rohad meg valoszinu
+        msg = "INDEX " + indexName + " CREATED ON TABLE " + tableName + " FOR COLUMN: " + column
+    else:
+        msg = "NO TABLE NAMED " + tableName + "!"
+    return msg
         
         
 ### DOC FUNC ###
-
-def dict_to_string(d) -> str:
-    return "#".join(f"{k}:{v}" for k, v in d.items())
-
-def dict_set_default(d) -> dict:
-    for k, v in d.items():
-        acc = v
-        match v:
-            case "INT":
-                acc = 'NULL'
-            case "BIT":
-                acc = 'NULL'
-                ...
-                #TODO: BEFEJEZNI ES A LIMITACIOKNAL AZ ALAPOT LEKERNI ES BEALLITANI
                 
-
 def insertDoc(tablename: str, dest: str, content: str) -> str:
     msg = ''
     if len(dest) != len(content):
@@ -139,36 +244,8 @@ def insertDoc(tablename: str, dest: str, content: str) -> str:
         content_string = dict_to_string(struct)
         collection.insert_one({'content': content_string})
     return "worked"
-def create_index2(indexName: str, tableName: str, column: str) -> str:
-    column = column[0]
-    if tableName in mydb.list_collection_names():
-        collection = mydb[tableName]
-        document = collection.find_one({'_id': 0})
-        if column.strip() not in document:
-            msg = "NO COLUMN NAMED " + column + "!"
-            return msg
-        somethingisfucked(indexName, collection, column)
-        #collection.create_index(column, name=str(indexName)) #maybe nem kell castelni, de igy megy so igy hagyom aztan ott rohad meg valoszinu
-        msg = "INDEX " + indexName + " CREATED ON TABLE " + tableName + " FOR COLUMN: " + column
-    else:
-        msg = "NO TABLE NAMED " + tableName + "!"
-    return msg
-        
-def somethingisfucked(indexName: str, collection, column):
-    indexes = collection.find_one({'_id': -1})
-    if indexName in indexes:
-        return 'INDEX ALLREADY EXISTS'
-    l = []
-    for document in collection.find():
-        if document['_id'] not in [0,-1]:
-            acc_dict = string_to_dict(document['content'])
-            l.append([document['KeyValue'],acc_dict[column]])
-    l.sort(key=lambda x: x[1])
-    acc_string = '#'.join(x[0] for x in l)
-    collection.update_one(indexes, {'$set': {indexName: acc_string} })
-        
-### DOC FUNC ###
 
+### DOC FUNC ###
 def dict_to_string(d) -> str:
     return "#".join(f"{k}:{v}" for k, v in d.items())
 
@@ -194,8 +271,6 @@ def dict_set_default(d) -> dict:
                 acc = 'NULL'
             case 'VARCHAR':
                 acc = 'NULL'
-                #TODO: BEFEJEZNI ES A LIMITACIOKNAL AZ ALAPOT LEKERNI ES BEALLITANI
-                
 
 def insertDoc(tablename: str, dest: str, content: str) -> str:
     msg = ''
@@ -211,7 +286,6 @@ def insertDoc(tablename: str, dest: str, content: str) -> str:
         msg = ''
         for col in dest:
             if col in struct:
-                #TODO: CHECK DATATYPE
                 if typecheck(content[i], struct[col]):
                     msg += f' {content[i]} = {struct[col]} ' 
                 if col == struct['KeyValue']:
@@ -227,6 +301,7 @@ def insertDoc(tablename: str, dest: str, content: str) -> str:
         collection.insert_one({'KeyValue' : keyVal,'content': content_string})
     print('idk')
     return msg
+
 
 def delete_doc_exact(table_name, col, val):
     collection = mydb[table_name]
@@ -293,3 +368,4 @@ def typecheck(val, typ:str):
 '''
 delete from test where a = 2;
 '''
+"a"
