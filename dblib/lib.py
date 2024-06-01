@@ -127,7 +127,7 @@ def join_dic_strings(table_name1: str, table_name2: str, dic1: str, dic2: str, c
             joined_dict[f'{table_name2}.{key}'] = val
     return joined_dict
 
-def build_join(source_name: str, other_name: str, source_table, other_table, col, index):
+def build_join(source_name: str, other_name: str, source_table, other_table, col, index, pk1, pk2):
     inner_join_doc = []
     for doc in source_table.find({}):
         if doc['_id'] != 'ඞ':
@@ -144,7 +144,8 @@ def build_join(source_name: str, other_name: str, source_table, other_table, col
                 else:
                     key2 = index[i2+1:]
                 for key in key2.split('ඞ'):
-                    inner_join_doc.append(join_dic_strings(other_name, source_name, other_table.find_one({'_id': key})['content'], doc['content'], col))
+                    other_table_doc = other_table.find_one({'_id': key})
+                    inner_join_doc.append(join_dic_strings(other_name, source_name, other_table_doc['content'] + f'#{pk2}:{key}', doc['content'] + f'#{pk1}:{key1}', col))
     return inner_join_doc
 
 def first_inner_join(table1: str, table2: str, col1: str, col2: str):
@@ -157,6 +158,8 @@ def first_inner_join(table1: str, table2: str, col1: str, col2: str):
         metadata2 = mydb[f'{t2}.info']
         table_struct1 = metadata1.find_one({'_id': 'ඞSTRUCTඞ'})
         table_struct2 = metadata2.find_one({'_id': 'ඞSTRUCTඞ'})
+        pk1 = table_struct1['KeyValue']
+        pk2 = table_struct2['KeyValue']
         if col1 in table_struct1.keys() and col2 in table_struct2.keys():
             #indexes1 = table1.find_one({'_id': -1})
             #indexes2 = table2.find_one({'_id': -1})
@@ -165,14 +168,14 @@ def first_inner_join(table1: str, table2: str, col1: str, col2: str):
             if index1 is not None:
                 index = [x for x in index1.split('ඞ') if x]
                 index = metadata1.find_one({'_id': index[0]})['VALUE']
-                return build_join(t2, t1, table2, table1, col2, index)
+                return build_join(t2, t1, table2, table1, col2, index, pk1, pk2)
             else:
                 index_handler2 = metadata2.find_one({'_id': 'ඞINDEXHANDLERඞ'})
                 index2 = index_handler2[col2]
                 if index2 is not None:
                     index = [x for x in index2.split('ඞ') if x]
                     index = metadata1.find_one({'_id': index[0]})['VALUE']
-                    return build_join(t2, t1, table2, table1, col2, index)
+                    return build_join(t2, t1, table2, table1, col2, index, pk2, pk1)
                 else:
                     #create_index2('ඞ', t1, col1)
                     if col1 == table_struct1['KeyValue']:
@@ -199,7 +202,7 @@ def first_inner_join(table1: str, table2: str, col1: str, col2: str):
                             else:
                                 acc_string += f'#{val}${key}'
                                 prev_val = val
-                    return build_join(t2, t1, table2, table1, col2, index)
+                    return build_join(t2, t1, table2, table1, col2, index, pk1, pk2)
         else:
             if col1 not in table_struct1.keys():
                 return f'{col1} DOESN\'T EXIST'
@@ -214,6 +217,7 @@ def first_inner_join(table1: str, table2: str, col1: str, col2: str):
 
 def nth_join_dic_and_string(doc, table_name2, table2, common):
     joined_dict = {}
+    print(common)
     for key, val in doc.items():
         joined_dict[f'{key}'] = val
     for key, val in string_to_dict(table2).items():
@@ -221,7 +225,7 @@ def nth_join_dic_and_string(doc, table_name2, table2, common):
             joined_dict[f'{table_name2}.{key}'] = val
     return joined_dict
 
-def nth_build_join(dict1, table2_name: str, table2, col, index):
+def nth_build_join(dict1, table2_name: str, table2, col, col2, index, pk2):
     inner_join_doc = []
     for doc in dict1:
         val = doc[col]
@@ -234,7 +238,7 @@ def nth_build_join(dict1, table2_name: str, table2, col, index):
             else:
                 key2 = index[i2+1:]
             for key in key2.split('ඞ'):
-                acc = nth_join_dic_and_string(doc, table2_name, table2.find_one({'_id': key})['content'], col)
+                acc = nth_join_dic_and_string(doc, table2_name, table2.find_one({'_id': key})['content'] + f'#{pk2}:{key}', col2)
                 if acc:
                     inner_join_doc.append(acc)
     return inner_join_doc
@@ -246,6 +250,7 @@ def nth_inner_join(table1: dict, table2: str, col1: str, col2: str):
     table2 = mydb[table2]
     metadata2 = mydb[f'{t2}.info']
     table_struct2 = metadata2.find_one({'_id': 'ඞSTRUCTඞ'})
+    pk2 = table_struct2['KeyValue']
     if col2 not in table_struct2:
         return f'{col2} DOESN\'T EXIST' 
     index_handler2 = metadata2.find_one({'_id': 'ඞINDEXHANDLERඞ'})
@@ -253,9 +258,8 @@ def nth_inner_join(table1: dict, table2: str, col1: str, col2: str):
     if index2 is not None:
         index = [x for x in index2.split('ඞ') if x]
         index = metadata2.find_one({'_id': index[0]})['VALUE']
-        return nth_build_join(table1, t2, table2, col1, index)
+        return nth_build_join(table1, t2, table2, col1, col2, index, pk2)
     else:
-        #TODO
         l = []
         for document in table2.find():
             if document['_id'] != 'ඞ':
@@ -270,7 +274,7 @@ def nth_inner_join(table1: dict, table2: str, col1: str, col2: str):
                 else:
                     acc_string += f'#{val}${key}'
                     prev_val = val
-        return nth_build_join(table1, t2, table2, col1, acc_string)
+        return nth_build_join(table1, t2, table2, col1, col2, acc_string, pk2)
 
 def rest_preproccess(rest: str):
     rest = rest.strip()
