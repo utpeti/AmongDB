@@ -330,4 +330,3 @@ async function createTableFromDialog(tableName) {
 }
 
 pleaseForTheLoveOfGod()
-
