@@ -127,12 +127,12 @@ def join_dic_strings(table_name1: str, table_name2: str, dic1: str, dic2: str, c
             joined_dict[f'{table_name2}.{key}'] = val
     return joined_dict
 
-def build_join(source_name: str, other_name: str, source_table, other_table, col, index):
+def build_join(source_name: str, other_name: str, source_table, other_table, col, index, pk1, pk2):
     inner_join_doc = []
     for doc in source_table.find({}):
-        if doc['_id'] not in [0,-1,-3]:
+        if doc['_id'] != 'ඞ':
             col_val = string_to_dict(doc['content'])[col]
-            key1 = doc['KeyValue']
+            key1 = doc['_id']
             #searching for the value in the other table
             i = index.find(col_val)
             #KEY OF OTHER DOC
@@ -144,43 +144,65 @@ def build_join(source_name: str, other_name: str, source_table, other_table, col
                 else:
                     key2 = index[i2+1:]
                 for key in key2.split('ඞ'):
-                    inner_join_doc.append(join_dic_strings(other_name, source_name, other_table.find_one({'KeyValue': key})['content'], doc['content'], col))
+                    other_table_doc = other_table.find_one({'_id': key})
+                    inner_join_doc.append(join_dic_strings(other_name, source_name, other_table_doc['content'] + f'#{pk2}:{key}', doc['content'] + f'#{pk1}:{key1}', col))
     return inner_join_doc
 
 def first_inner_join(table1: str, table2: str, col1: str, col2: str):
-    index = ''
-    def index_srch(indexes: dict, col: str):
-        nonlocal index
-        for val in indexes.values():
-            if str(val).startswith(col):
-                index = val
-                return True
-        return False
-
     if table1 in mydb.list_collection_names() and table2 in mydb.list_collection_names():
         t1 = table1
         t2 = table2
         table1 = mydb[table1]
         table2 = mydb[table2]
-        table_struct1 = table1.find_one({'_id': 0})
-        table_struct2 = table2.find_one({'_id': 0})
+        metadata1 = mydb[f'{t1}.info']
+        metadata2 = mydb[f'{t2}.info']
+        table_struct1 = metadata1.find_one({'_id': 'ඞSTRUCTඞ'})
+        table_struct2 = metadata2.find_one({'_id': 'ඞSTRUCTඞ'})
+        pk1 = table_struct1['KeyValue']
+        pk2 = table_struct2['KeyValue']
         if col1 in table_struct1.keys() and col2 in table_struct2.keys():
-            indexes1 = table1.find_one({'_id': -1})
-            indexes2 = table2.find_one({'_id': -1})
-            if index_srch(indexes1, col1):
-                return build_join(t2, t1, table2, table1, col2, index)
-            elif index_srch(indexes2, col2):
-                return build_join(t1, t2, table1, table2, col1, index)
+            #indexes1 = table1.find_one({'_id': -1})
+            #indexes2 = table2.find_one({'_id': -1})
+            index_handler1 = metadata1.find_one({'_id': 'ඞINDEXHANDLERඞ'})
+            index1 = index_handler1[col1]
+            if index1 is not None:
+                index = [x for x in index1.split('ඞ') if x]
+                index = metadata1.find_one({'_id': index[0]})['VALUE']
+                return build_join(t2, t1, table2, table1, col2, index, pk1, pk2)
             else:
-                create_index2('ඞ', t1, col1)
-                #megvarjuk a szerver kapja meg az indexet
-                while 'ඞ' not in mydb[t1].find_one({'_id': -1}):
-                    ...
-                table1 = mydb[t1]
-                indexes1 = table1.find_one({'_id': -1})
-                table1.update_one(indexes1, {'$unset': {'ඞ': ''} })
-                index_srch(indexes1, col1)
-                return build_join(t2, t1, table2, table1, col2, index)
+                index_handler2 = metadata2.find_one({'_id': 'ඞINDEXHANDLERඞ'})
+                index2 = index_handler2[col2]
+                if index2 is not None:
+                    index = [x for x in index2.split('ඞ') if x]
+                    index = metadata1.find_one({'_id': index[0]})['VALUE']
+                    return build_join(t2, t1, table2, table1, col2, index, pk2, pk1)
+                else:
+                    #create_index2('ඞ', t1, col1)
+                    if col1 == table_struct1['KeyValue']:
+                        l = []
+                        for document in table1.find():
+                            if document['_id'] != 'ඞ':
+                                l.append(document['_id'])
+                        l.sort(key=lambda x: int(x))
+                        acc_string = ''
+                        for key in l:
+                            acc_string += f'#{key}${key}'
+                    else:
+                        l = []
+                        for document in table1.find():
+                            if document['_id'] != 'ඞ':
+                                acc_dict = string_to_dict(document['content'])
+                                l.append([document['_id'],acc_dict[col1]])
+                        l.sort(key=lambda x: x[1])
+                        acc_string = ''
+                        prev_val = False
+                        for key, val in l:
+                            if val == prev_val:
+                                acc_string += f'ඞ{key}'
+                            else:
+                                acc_string += f'#{val}${key}'
+                                prev_val = val
+                    return build_join(t2, t1, table2, table1, col2, index, pk1, pk2)
         else:
             if col1 not in table_struct1.keys():
                 return f'{col1} DOESN\'T EXIST'
@@ -195,6 +217,7 @@ def first_inner_join(table1: str, table2: str, col1: str, col2: str):
 
 def nth_join_dic_and_string(doc, table_name2, table2, common):
     joined_dict = {}
+    print(common)
     for key, val in doc.items():
         joined_dict[f'{key}'] = val
     for key, val in string_to_dict(table2).items():
@@ -202,8 +225,7 @@ def nth_join_dic_and_string(doc, table_name2, table2, common):
             joined_dict[f'{table_name2}.{key}'] = val
     return joined_dict
 
-
-def nth_build_join(dict1, table2_name: str, table2, col, index):
+def nth_build_join(dict1, table2_name: str, table2, col, col2, index, pk2):
     inner_join_doc = []
     for doc in dict1:
         val = doc[col]
@@ -216,47 +238,43 @@ def nth_build_join(dict1, table2_name: str, table2, col, index):
             else:
                 key2 = index[i2+1:]
             for key in key2.split('ඞ'):
-                acc = nth_join_dic_and_string(doc, table2_name, table2.find_one({'KeyValue': key})['content'], col)
+                acc = nth_join_dic_and_string(doc, table2_name, table2.find_one({'_id': key})['content'] + f'#{pk2}:{key}', col2)
                 if acc:
                     inner_join_doc.append(acc)
     return inner_join_doc
 
 def nth_inner_join(table1: dict, table2: str, col1: str, col2: str):
-    print(table2)
     if table2 not in mydb.list_collection_names():
         return f'{table2} DOESN\'T EXIST'
     t2 = table2
     table2 = mydb[table2]
-    table_struct2 = table2.find_one({'_id': 0})
+    metadata2 = mydb[f'{t2}.info']
+    table_struct2 = metadata2.find_one({'_id': 'ඞSTRUCTඞ'})
+    pk2 = table_struct2['KeyValue']
     if col2 not in table_struct2:
-        return f'{col2} DOESN\'T EXIST'
-    
-    index = ''
-    def index_srch(indexes: dict, col: str):
-        nonlocal index
-        for val in indexes.values():
-            if str(val).startswith(col):
-                index = val
-                return True
-        return False
-    
-    indexes2 = table2.find_one({'_id': -1})
-    print('itt')
-    if index_srch(indexes2, col2):
-        return nth_build_join(table1, t2, table2, col1, index)
+        return f'{col2} DOESN\'T EXIST' 
+    index_handler2 = metadata2.find_one({'_id': 'ඞINDEXHANDLERඞ'})
+    index2 = index_handler2[col2]
+    if index2 is not None:
+        index = [x for x in index2.split('ඞ') if x]
+        index = metadata2.find_one({'_id': index[0]})['VALUE']
+        return nth_build_join(table1, t2, table2, col1, col2, index, pk2)
     else:
-        print('ja')
-        create_index2('ඞ', t2, col2)
-        #megvarjuk a szerver kapja meg az indexet
-        while 'ඞ' not in mydb[t2].find_one({'_id': -1}):
-            ...
-        print('1')
-        table2 = mydb[t2]
-        indexes2 = table2.find_one({'_id': -1})
-        table2.update_one(indexes2, {'$unset': {'ඞ': ''} })
-        index_srch(indexes2, col1)
-        print(index)
-        return nth_build_join(table1, t2, table2, col1, index)
+        l = []
+        for document in table2.find():
+            if document['_id'] != 'ඞ':
+                acc_dict = string_to_dict(document['content'])
+                l.append([document['_id'],acc_dict[col2]])
+            l.sort(key=lambda x: x[1])
+            acc_string = ''
+            prev_val = False
+            for key, val in l:
+                if val == prev_val:
+                    acc_string += f'ඞ{key}'
+                else:
+                    acc_string += f'#{val}${key}'
+                    prev_val = val
+        return nth_build_join(table1, t2, table2, col1, col2, acc_string, pk2)
 
 def rest_preproccess(rest: str):
     rest = rest.strip()
@@ -275,8 +293,6 @@ def inner_join_handler(table1: str, table2: str, col1: str, col2: str, rest: str
     if len(rest.strip()) > 0:
         tables = rest_preproccess(rest)
         for content in tables:
-            print(content)
-            print('a')
             ans = nth_inner_join(ans, content[0], content[1], content[2])
     return ans
 
@@ -370,6 +386,8 @@ def update_all_indexes(values, metadata, id, method):
         for index in [x for x in indexes.split('ඞ') if x]:
             update_index(values[column], metadata, index, id, method)
         
+def get_index_on_col(col):
+    ...
 
 ### DOC FUNC ###
 def dict_to_string(d) -> str:
