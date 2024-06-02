@@ -551,7 +551,8 @@ def select_all(table_name: str):
 
 def select_col(col_names, table_name: str):
     collection = mydb[table_name]
-    struct = collection.find_one({'_id': 0})
+    metadata = mydb[f'{table_name}.info']
+    struct = metadata.find_one({'_id': 'ඞSTRUCTඞ'})
     ret_dict = {}
     for key in struct.keys():
         if key not in ['_id', 'KeyValue'] and key in col_names:
@@ -559,7 +560,7 @@ def select_col(col_names, table_name: str):
     if struct:
         struct.pop('_id')
         for document in collection.find():
-            if document['_id'] not in [0,-1,-3]:
+            if document['_id'] != 'ඞ':
                 acc_dict = string_to_dict(document['content'])
                 for key, value in acc_dict.items():
                     if key in col_names:
@@ -569,7 +570,8 @@ def select_col(col_names, table_name: str):
 
 def select_all_where(table_name: str, conditions: str):
     collection = mydb[table_name]
-    struct = collection.find_one({'_id': 0})
+    metadata = mydb[f'{table_name}.info']
+    struct = metadata.find_one({'_id': 'ඞSTRUCTඞ'})
     ret_dict = {}
     for key in struct.keys():
         if key not in ['_id', 'KeyValue']:
@@ -577,7 +579,7 @@ def select_all_where(table_name: str, conditions: str):
     if struct:
         struct.pop('_id')
         for document in collection.find():
-            if document['_id'] not in [0, -1, -3]:
+            if document['_id'] != 'ඞ':
                 acc_dict = string_to_dict(document['content'])
                 if evaluate_conditions(acc_dict, conditions):
                     for key in acc_dict.keys():
@@ -589,7 +591,8 @@ def select_all_where(table_name: str, conditions: str):
 
 def select_where(col_names, table_name: str, conditions: str):
     collection = mydb[table_name]
-    struct = collection.find_one({'_id': 0})
+    metadata = mydb[f'{table_name}.info']
+    struct = metadata.find_one({'_id': 'ඞSTRUCTඞ'})
     renames = []
     ret_dict = {}
     
@@ -610,7 +613,7 @@ def select_where(col_names, table_name: str, conditions: str):
     if struct:
         struct.pop('_id', None)
         for document in collection.find():
-            if document['_id'] not in [0, -1, -3]:
+            if document['_id'] != 'ඞ':
                 acc_dict = string_to_dict(document['content'])
                 
                 if evaluate_conditions(acc_dict, conditions):
