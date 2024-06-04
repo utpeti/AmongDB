@@ -10,6 +10,7 @@ TYPES = ['INT', 'FLOAT', 'BIT', 'DATE', 'DATETIME', 'VARCHAR']
 primary_key_regex = re.compile(r'\s+PRIMARY\s+KEY\s+\((\w+)\)', re.IGNORECASE)
 foreign_key_regex = re.compile(r'\s+FOREIGN\s+KEY\s+\((\w+)\)', re.IGNORECASE)
 unique_key_regex = re.compile(r'\s+UNIQUE\s+KEY\s+\((\w+)\)', re.IGNORECASE)
+inner_join_regex_for_select = re.compile(r'FROM\s([A-Za-z0-9_]+)\s+JOIN\s+([A-Za-z0-9_]+)\s+ON\s+([A-Za-z0-9_]+)\s+=\s+([A-Za-z0-9_]+)([^)]*)', re.IGNORECASE)
 
 ### TABLE FUNCTIONS: ###
 
@@ -217,7 +218,6 @@ def first_inner_join(table1: str, table2: str, col1: str, col2: str):
 
 def nth_join_dic_and_string(doc, table_name2, table2, common):
     joined_dict = {}
-    print(common)
     for key, val in doc.items():
         joined_dict[f'{key}'] = val
     for key, val in string_to_dict(table2).items():
@@ -363,7 +363,6 @@ def index_to_dict(index):
     return {el[0]: el[1].split('ඞ') for el in [x.split('$') for x in index['VALUE'][1:].split('#')]}
 
 def update_index(value, metadata, index, id, method):
-    index = metadata.find_one({'_id': index})
     ind = index_to_dict(index)
     if method == 'add':
         if value in ind:
@@ -379,14 +378,15 @@ def update_index(value, metadata, index, id, method):
 
 def update_all_indexes(values, metadata, id, method):
     index_handler = metadata.find_one({'_id': 'ඞINDEXHANDLERඞ'})
+
     for column in values.keys():
         indexes = index_handler[column]
         if not indexes:
             return
-        for index in [x for x in indexes.split('ඞ') if x]:
+        for index in metadata.find({'_id': {'$in': [x for x in indexes.split('ඞ') if x]}}):
             update_index(values[column], metadata, index, id, method)
         
-def get_index_on_col(col):
+def get_all_indexes_on_col(col):
     ...
 
 ### DOC FUNC ###
@@ -446,10 +446,8 @@ def insertDoc(tablename: str, dest: str, content: str) -> str:
         content_string = dict_to_string(struct)
         struct[pk] = pk_val
         update_all_indexes(struct, metadata, keyVal, 'add')
-        print(struct)
         collection.insert_one({'_id' : keyVal,'content': content_string})
     return msg
-
 
 def delete_doc_exact(table_name, col, val):
     if table_name not in mydb.list_collection_names():
@@ -463,8 +461,8 @@ def delete_doc_exact(table_name, col, val):
     index_handler = metadata.find_one({ '_id': 'ඞINDEXHANDLERඞ'})
     indexes = index_handler[col]
     if indexes is not None:
-        index = [x for x in indexes.split('ඞ') if x]
-        index = metadata.find_one({'_id': index[0]})
+        index_list = [x for x in indexes.split('ඞ') if x]
+        index = metadata.find_one({'_id': index_list[0]})
         ind = index_to_dict(index)
         ids = ind[val]
         for id in ids:
@@ -526,104 +524,111 @@ def typecheck(val, typ:str):
 
 ### SELECT ###
 
+def select_table_name_handler(tables):
+    if inner_join_regex_for_select.match('FROM ' + tables):
+        match = inner_join_regex_for_select.search('FROM ' + tables)
+        table1 = match.group(1)
+        table2 = match.group(2)
+        col1 = match.group(3)
+        col2 = match.group(4)
+        rest = match.group(5)
+        return inner_join_handler(table1, table2, col1, col2, rest)
+    else:
+        if tables not in mydb.list_collection_names():
+            return f'{tables} DOES NOT EXIST IN THE CURRENT DATABASE'
+        collection = mydb[tables]
+        metadata = mydb[f'{tables}.info']
+        struct = metadata.find_one({'_id': 'ඞSTRUCTඞ'})
+        if struct is None:
+            return 'YOUR TABLE WAS MADE IN AN OLDER VERSION'
+        pk = struct['KeyValue']
+        ret_list = []
+        for doc in collection.find():
+            if doc['_id'] != 'ඞ':
+                ans = string_to_dict(doc['content'])
+                ans[pk] = doc['_id']
+                ret_list.append(ans)
+        return ret_list
+
 def select_output_formatting(d: dict) -> str:
     for key, value in d.items():
         d[key] = ', '.join(value)
     return d
 
 def select_all(table_name: str):
-    collection = mydb[table_name]
-    struct = collection.find_one({'_id': 0})
-    ret_dict = {}
-    for key in struct.keys():
-        if key not in ['_id', 'KeyValue']:
-            ret_dict[key] = []
-    if struct:
-        struct.pop('_id')
-        for document in collection.find():
-            if document['_id'] not in [0,-1,-3]:
-                acc_dict = string_to_dict(document['content'])
-                for key, value in acc_dict.items():
-                    ret_dict[key].append(value)
-                    
-        return select_output_formatting(ret_dict)
-    return "TABLE EMPTY"
+    return select_table_name_handler(table_name)
 
-def select_col(col_names, table_name: str):
-    collection = mydb[table_name]
-    struct = collection.find_one({'_id': 0})
-    ret_dict = {}
-    for key in struct.keys():
-        if key not in ['_id', 'KeyValue'] and key in col_names:
-            ret_dict[key] = []
-    if struct:
-        struct.pop('_id')
-        for document in collection.find():
-            if document['_id'] not in [0,-1,-3]:
-                acc_dict = string_to_dict(document['content'])
-                for key, value in acc_dict.items():
-                    if key in col_names:
-                        ret_dict[key].append(value)
-        return select_output_formatting(ret_dict)
-    return "TABLE EMPTY"
-
-def select_all_where(table_name: str, conditions: str):
-    collection = mydb[table_name]
-    struct = collection.find_one({'_id': 0})
-    ret_dict = {}
-    for key in struct.keys():
-        if key not in ['_id', 'KeyValue']:
-            ret_dict[key] = []
-    if struct:
-        struct.pop('_id')
-        for document in collection.find():
-            if document['_id'] not in [0, -1, -3]:
-                acc_dict = string_to_dict(document['content'])
-                if evaluate_conditions(acc_dict, conditions):
-                    for key in acc_dict.keys():
-                        if key in ret_dict:
-                            ret_dict[key].append(acc_dict[key])
-        
-        return select_output_formatting(ret_dict)
-    return "TABLE EMPTY"
-
-def select_where(col_names, table_name: str, conditions: str):
-    collection = mydb[table_name]
-    struct = collection.find_one({'_id': 0})
-    renames = []
-    ret_dict = {}
-    
+def select_col(col_names, table_name):
+    doc_list = select_table_name_handler(table_name)
+    if isinstance(doc_list ,str) or doc_list is None:
+        return doc_list
+    #CHECK IF COL EXISTS
+    keys = doc_list[0].keys()
+    renames = {}
     for col_name in col_names:
         if 'AS' in col_name:
             parts = col_name.split('AS')
             if len(parts) == 2:
                 original_col, alias = parts[0].strip(), parts[1].strip()
-                renames.append((original_col, alias))
+                if original_col.strip() not in keys:
+                    return f'{original_col} IS AN INVALID COLUMN NAME'
+                renames[original_col] = alias
             else:
                 raise ValueError(f"Invalid column alias format in: {col_name}")
         else:
-            renames.append((col_name.strip(), col_name.strip()))
-    
-    for original_col, alias in renames:
-        ret_dict[alias] = []
-    
-    if struct:
-        struct.pop('_id', None)
-        for document in collection.find():
-            if document['_id'] not in [0, -1, -3]:
-                acc_dict = string_to_dict(document['content'])
-                
-                if evaluate_conditions(acc_dict, conditions):
-                    for original_col, alias in renames:
-                        if original_col in acc_dict:
-                            ret_dict[alias].append(acc_dict[original_col])
-    
-        return select_output_formatting(ret_dict)
-    return "TABLE EMPTY"
+            if col_name.strip() not in keys:
+                return f'{col_name} IS AN INVALID COLUMN NAME'
+            renames[col_name.strip()] = col_name.strip()
+    ret_list = []
+    for doc in doc_list:
+        ret_dict = {}
+        for key, alias in renames.items():
+            ret_dict[alias] = doc[key]
+        ret_list.append(ret_dict)
+    return ret_list
 
+def select_all_where(table_name: str, conditions: str):
+    doc_list = select_table_name_handler(table_name)
+    if isinstance(doc_list ,str) or doc_list is None:
+        return doc_list
+    ret_list = []
+    for doc in doc_list:
+        if evaluate_conditions(doc, conditions):
+            ret_list.append(doc)
+    return ret_list
+
+def select_where(col_names, table_name: str, conditions: str):
+    doc_list = select_table_name_handler(table_name)
+    if isinstance(doc_list ,str) or doc_list is None:
+        return doc_list
+    #CHECK IF COL EXISTS
+    keys = doc_list[0].keys()
+    renames = {}
+    for col_name in col_names:
+        if 'AS' in col_name:
+            parts = col_name.split('AS')
+            if len(parts) == 2:
+                original_col, alias = parts[0].strip(), parts[1].strip()
+                if original_col.strip() not in keys:
+                    return f'{original_col} IS AN INVALID COLUMN NAME'
+                renames[original_col] = alias
+            else:
+                raise ValueError(f"Invalid column alias format in: {col_name}")
+        else:
+            if col_name.strip() not in keys:
+                return f'{col_name} IS AN INVALID COLUMN NAME'
+            renames[col_name.strip()] = col_name.strip()
+    ret_list = []
+    for doc in doc_list:
+        if evaluate_conditions(doc, conditions):
+            ret_dict = {}
+            for key, alias in renames.items():
+                ret_dict[alias] = doc[key]
+            ret_list.append(ret_dict)
+    return ret_list
 
 def evaluate_conditions(data, conditions):
-    condition_pattern = re.compile(r"([A-Za-z0-9_]+)\s*(=|>=|<=|>|<)\s*('.*?'|[A-Za-z0-9_]+)\s*(AND|OR)?", re.IGNORECASE)
+    condition_pattern = re.compile(r"([A-Za-z0-9_.]+)\s*(=|>=|<=|>|<)\s*('.*?'|[A-Za-z0-9_.]+)\s*(AND|OR)?", re.IGNORECASE)
     matches = condition_pattern.findall(conditions)
     
     if not matches:
