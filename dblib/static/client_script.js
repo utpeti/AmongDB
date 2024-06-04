@@ -1,7 +1,7 @@
 //making life a bit happier
 function handleTabKey(event) {
   const tabKeyCode = 9;
-  const parenthesesKeyCode = 57;
+  const parenthesesKeyCode = 219;
   const enter = 13;
   const textarea = document.getElementById("large_text_field");
   const currTxt = textarea.value;
@@ -15,6 +15,7 @@ function handleTabKey(event) {
       textarea.selectionEnd = textarea.selectionStart;
       break;
     case parenthesesKeyCode:
+      break;
       event.preventDefault();
       event.stopPropagation();
       textarea.value = currTxt.substring(0, cursorPosition) + '()' + currTxt.substring(cursorPosition);
