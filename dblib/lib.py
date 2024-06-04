@@ -218,7 +218,6 @@ def first_inner_join(table1: str, table2: str, col1: str, col2: str):
 
 def nth_join_dic_and_string(doc, table_name2, table2, common):
     joined_dict = {}
-    print(common)
     for key, val in doc.items():
         joined_dict[f'{key}'] = val
     for key, val in string_to_dict(table2).items():

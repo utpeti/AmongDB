@@ -30,7 +30,9 @@ app = Flask(__name__,
 def get_databases():
     valami = request.json
     ans = ''
+    i = 0
     for command in valami['text'].split(';') :
+        print(i)
         if command.strip() != '':
             ans += f'\n{sch(command.strip())}'
     return ans
@@ -80,12 +82,10 @@ def sch(command: str):
         rest = match.group(5)
         commandMsg = lib.inner_join_handler(table1, table2, col1, col2, rest)
     elif select_all_regex2.match(command):
-        print(command)
         match = select_all_regex2.search(command)
         table_name = match.group(1)
         commandMsg = lib.select_all(table_name)
     elif select_regex2.match(command):
-        print(command)
         match = select_regex2.search(command)
         col_names = match.group(1).split(', ')
         table_name = match.group(2)
