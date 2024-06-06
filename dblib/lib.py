@@ -25,6 +25,7 @@ def create_table(name: str, content: str) -> str:
     # CREATING DICT FROM CONTENT
     tablestruct = {}
     tablestruct['_id'] = 'ඞSTRUCTඞ'
+    innertablestructwhichwillberestored = []
     uniquestruct = {}
     uniquestruct['_id'] = 'ඞUNIQUE KEYSඞ'
     indexhandler = {}
@@ -33,7 +34,8 @@ def create_table(name: str, content: str) -> str:
         line.strip(',')
         if primary_key_regex.match(line):
             match = primary_key_regex.search(line)
-            tablestruct['KeyValue'] = match.group(1)
+            innertablestructwhichwillberestored.append(['KeyValue', match.group(1)])
+            #tablestruct['KeyValue'] = match.group(1)
             uniquestruct[match.group(1)] = 0
         elif foreign_key_regex.match(line):
             match = foreign_key_regex.search(line)
@@ -56,14 +58,24 @@ def create_table(name: str, content: str) -> str:
         else:
             line = list(filter(None,line.strip(',').split(' ')))
             if line[1] in TYPES:
-                tablestruct[line[0].strip()] = line[1]
+                #tablestruct[line[0].strip()] = line[1]
+                innertablestructwhichwillberestored.append([line[0].strip(), line[1]])
             indexhandler[line[0].strip()] = None
+    tablestruct['cols'] = innertablestructwhichwillberestored
     mycol_metadata.insert_one(tablestruct)
     mycol_metadata.insert_one(indexhandler)
     mycol.insert_one({'_id': 'ඞ', 'TABLE CREATED': True})
     mycol_metadata.insert_one(uniquestruct)
     msg = "TABLE " + name + " CREATED!"
     return msg
+
+def backtonormalstruct(structorder):
+    struct = structorder.copy()
+    acc = struct['cols']
+    del struct['cols']
+    for coll, typ in acc:
+        struct[coll] = typ
+    return struct
         
 def drop_table(name: str) -> str:
     if name not in mydb.list_collection_names():
@@ -128,11 +140,11 @@ def join_dic_strings(table_name1: str, table_name2: str, dic1: str, dic2: str, c
             joined_dict[f'{table_name2}.{key}'] = val
     return joined_dict
 
-def build_join(source_name: str, other_name: str, source_table, other_table, col, index, pk1, pk2):
+def build_join(source_name: str, other_name: str, source_table, other_table, col, index, pk1, pk2, structorder_source, structorder_other):
     inner_join_doc = []
     for doc in source_table.find({}):
         if doc['_id'] != 'ඞ':
-            col_val = string_to_dict(doc['content'])[col]
+            col_val = string_to_dict(backtonormalstring(doc['content'], structorder_source))[col]
             key1 = doc['_id']
             #searching for the value in the other table
             i = index.find(col_val)
@@ -146,7 +158,10 @@ def build_join(source_name: str, other_name: str, source_table, other_table, col
                     key2 = index[i2+1:]
                 for key in key2.split('ඞ'):
                     other_table_doc = other_table.find_one({'_id': key})
-                    inner_join_doc.append(join_dic_strings(other_name, source_name, other_table_doc['content'] + f'#{pk2}:{key}', doc['content'] + f'#{pk1}:{key1}', col))
+                    if other_table_doc is None:
+                        #continue
+                        ...
+                    inner_join_doc.append(join_dic_strings(other_name, source_name, backtonormalstring(other_table_doc['content'], structorder_other) + f'#{pk2}:{key}', backtonormalstring(doc['content'], structorder_source) + f'#{pk1}:{key1}', col))
     return inner_join_doc
 
 def first_inner_join(table1: str, table2: str, col1: str, col2: str):
@@ -157,8 +172,10 @@ def first_inner_join(table1: str, table2: str, col1: str, col2: str):
         table2 = mydb[table2]
         metadata1 = mydb[f'{t1}.info']
         metadata2 = mydb[f'{t2}.info']
-        table_struct1 = metadata1.find_one({'_id': 'ඞSTRUCTඞ'})
-        table_struct2 = metadata2.find_one({'_id': 'ඞSTRUCTඞ'})
+        structorder1 = metadata1.find_one({'_id': 'ඞSTRUCTඞ'})
+        table_struct1 = backtonormalstruct(structorder1)
+        structorder2 = metadata2.find_one({'_id': 'ඞSTRUCTඞ'})
+        table_struct2 = backtonormalstruct(structorder2)
         pk1 = table_struct1['KeyValue']
         pk2 = table_struct2['KeyValue']
         if col1 in table_struct1.keys() and col2 in table_struct2.keys():
@@ -169,14 +186,14 @@ def first_inner_join(table1: str, table2: str, col1: str, col2: str):
             if index1 is not None:
                 index = [x for x in index1.split('ඞ') if x]
                 index = metadata1.find_one({'_id': index[0]})['VALUE']
-                return build_join(t2, t1, table2, table1, col2, index, pk1, pk2)
+                return build_join(t2, t1, table2, table1, col2, index, pk1, pk2, structorder2, structorder1)
             else:
                 index_handler2 = metadata2.find_one({'_id': 'ඞINDEXHANDLERඞ'})
                 index2 = index_handler2[col2]
                 if index2 is not None:
                     index = [x for x in index2.split('ඞ') if x]
                     index = metadata1.find_one({'_id': index[0]})['VALUE']
-                    return build_join(t2, t1, table2, table1, col2, index, pk2, pk1)
+                    return build_join(t2, t1, table2, table1, col2, index, pk2, pk1, structorder2, structorder1) #TODO: lehet fel kell cserelni
                 else:
                     #create_index2('ඞ', t1, col1)
                     if col1 == table_struct1['KeyValue']:
@@ -192,7 +209,7 @@ def first_inner_join(table1: str, table2: str, col1: str, col2: str):
                         l = []
                         for document in table1.find():
                             if document['_id'] != 'ඞ':
-                                acc_dict = string_to_dict(document['content'])
+                                acc_dict = string_to_dict(backtonormalstring(document['content'], structorder1))
                                 l.append([document['_id'],acc_dict[col1]])
                         l.sort(key=lambda x: x[1])
                         acc_string = ''
@@ -203,7 +220,7 @@ def first_inner_join(table1: str, table2: str, col1: str, col2: str):
                             else:
                                 acc_string += f'#{val}${key}'
                                 prev_val = val
-                    return build_join(t2, t1, table2, table1, col2, index, pk1, pk2)
+                    return build_join(t2, t1, table2, table1, col2, acc_string, pk1, pk2, structorder2, structorder1)
         else:
             if col1 not in table_struct1.keys():
                 return f'{col1} DOESN\'T EXIST'
@@ -249,7 +266,8 @@ def nth_inner_join(table1: dict, table2: str, col1: str, col2: str):
     t2 = table2
     table2 = mydb[table2]
     metadata2 = mydb[f'{t2}.info']
-    table_struct2 = metadata2.find_one({'_id': 'ඞSTRUCTඞ'})
+    structorder2 = metadata2.find_one({'_id': 'ඞSTRUCTඞ'})
+    table_struct2 = backtonormalstruct(structorder2)
     pk2 = table_struct2['KeyValue']
     if col2 not in table_struct2:
         return f'{col2} DOESN\'T EXIST' 
@@ -263,7 +281,7 @@ def nth_inner_join(table1: dict, table2: str, col1: str, col2: str):
         l = []
         for document in table2.find():
             if document['_id'] != 'ඞ':
-                acc_dict = string_to_dict(document['content'])
+                acc_dict = string_to_dict(backtonormalstring(document['content'], structorder2))
                 l.append([document['_id'],acc_dict[col2]])
             l.sort(key=lambda x: x[1])
             acc_string = ''
@@ -308,11 +326,11 @@ def update_index_handler(indexName: str, tableName: str, column: str):
     indexes += f'ඞ{indexName}'
     metadata.update_one(handler, {'$set': {column: indexes} })
     
-def magic(indexName: str, collection, column, metadata):
+def magic(indexName: str, collection, column, metadata, structorder):
     l = []
     for document in collection.find():
         if document['_id'] != 'ඞ':
-            acc_dict = string_to_dict(document['content'])
+            acc_dict = string_to_dict(backtonormalstring(document['content'], structorder))
             l.append([document['_id'],acc_dict[column]])
     l.sort(key=lambda x: x[1])
     acc_string = ''
@@ -344,14 +362,15 @@ def create_index2(indexName: str, tableName: str, column: str) -> str:
         metadata = mydb[f'{tableName}.info']
         if metadata.find_one({'_id': indexName}):
             return 'INDEX ALLREADY EXISTS'
-        document = metadata.find_one({'_id': 'ඞSTRUCTඞ'})
+        structorder = metadata.find_one({'_id': 'ඞSTRUCTඞ'})
+        document = backtonormalstruct(structorder)
         if column.strip() not in document and column.strip() != 'KeyValue':
             msg = "NO COLUMN NAMED " + column + "!"
             return msg
         if column.strip() == document['KeyValue']:
-            magicPK(indexName, collection, metadata)
+            magicPK(indexName, collection, metadata, structorder)
         else:
-            magic(indexName, collection, column, metadata)
+            magic(indexName, collection, column, metadata, structorder)
         update_index_handler(indexName, tableName, column)
         #collection.create_index(column, name=str(indexName)) #maybe nem kell castelni, de igy megy so igy hagyom aztan ott rohad meg valoszinu
         msg = "INDEX " + indexName + " CREATED ON TABLE " + tableName + " FOR COLUMN: " + column
@@ -389,11 +408,13 @@ def update_all_indexes(values, metadata, id, method):
 def get_all_indexes_on_col(col):
     ...
 
+
 ### DOC FUNC ###
 def dict_to_string(d) -> str:
     return "#".join(f"{k}:{v}" for k, v in d.items())
 
 def string_to_dict(string) -> dict:
+    print(f'{string} aaaaaaaaaaaaaaaaaaaa-----------')
     return dict(item.split(':') for item in string.split('#'))
 
 #TYPES = ['INT', 'FLOAT', 'BIT', 'DATE', 'DATETIME', 'VARCHAR']
@@ -416,6 +437,29 @@ def dict_set_default(d) -> dict:
             case 'VARCHAR':
                 acc = 'NULL'
 
+def tonewstring(d, structorder, pk):
+    l = []
+    for k, t in structorder['cols']:
+        if k != 'KeyValue' and k != pk:
+            l.append(d[k])
+    return '#'.join(l)
+
+def backtonormalstring(newstring, structorder):
+    l2 = newstring.split('#')
+    print()
+    print([newstring, structorder])
+    print()
+    for k, t in structorder['cols']:
+        if k == 'KeyValue':
+            pk = t
+    i = 0
+    for k, t in structorder['cols']:
+        if k != 'KeyValue' and k != pk:
+            l2[i] = f'{k}:{l2[i]}'
+            i += 1
+    print(l2)
+    return '#'.join(l2)
+
 def insertDoc(tablename: str, dest: str, content: str) -> str:
     msg = ''
     if len(dest) != len(content):
@@ -423,7 +467,8 @@ def insertDoc(tablename: str, dest: str, content: str) -> str:
     if tablename in mydb.list_collection_names():
         collection = mydb[tablename]
         metadata = mydb[f'{tablename}.info']
-        struct = metadata.find_one({'_id': 'ඞSTRUCTඞ'})
+        structorder = metadata.find_one({'_id': 'ඞSTRUCTඞ'})
+        struct = backtonormalstruct(structorder)
         struct.pop('_id')
         pk = struct['KeyValue']
         keyVal = 0
@@ -443,17 +488,23 @@ def insertDoc(tablename: str, dest: str, content: str) -> str:
                 return col + ' NOT IN ' + tablename + msg
             i += 1
         struct.pop('KeyValue')
-        content_string = dict_to_string(struct)
+        #content_string = dict_to_string(struct)
+        content_string = tonewstring(struct, structorder, pk)
         struct[pk] = pk_val
         update_all_indexes(struct, metadata, keyVal, 'add')
         collection.insert_one({'_id' : keyVal,'content': content_string})
     return msg
 
+def get_index_names_from_handler(handler: dict):
+    del handler['_id']
+    return [y for y in ''.join([x for x in handler.values() if x is not None]).split('@') if y]
+
 def delete_doc_exact(table_name, col, val):
     if table_name not in mydb.list_collection_names():
         return 'TABLE DOES NOT EXIST'
     collection = mydb[table_name]
-    struct = mydb[f'{table_name}.info'].find_one({'_id': 'ඞSTRUCTඞ'})
+    structorder = mydb[f'{table_name}.info'].find_one({'_id': 'ඞSTRUCTඞ'})
+    struct = backtonormalstruct(structorder)
     struct.pop('_id')
     if not struct.get(col,False):
         return "COL DOESNT EXIST"
@@ -467,22 +518,36 @@ def delete_doc_exact(table_name, col, val):
         ids = ind[val]
         for id in ids:
             document = collection.find_one({'_id': id})
-            document_dict = string_to_dict(document['content'])
-            document_dict[struct['KeyValue']] = id
             collection.delete_one(document)
-            update_all_indexes(document_dict, metadata, id, 'remove')
 
     else:
         for document in collection.find():
-            acc = string_to_dict(document['content']) #TODO: indexes and primary key implement
-            if acc[col] == val:
-                document_dict = string_to_dict(acc)
-                document_dict[struct['KeyValue']] = id
-                collection.delete_one(document)
-                update_all_indexes(document_dict, metadata, id, 'remove') #TUDOM MEGTUDTAM VOLNA DROP MANYVEL IS OLDANI DE IGY FOGTAM NEKI, HAJNALI 3 VAN ES MAR ALUDNI AKAROK HA NEKED EZZEL VAN VALAMI BAJOD AKKOR IRD MEG MAGADNAK VAGY VARDD MEG MIG FELKELEK ES ATIROM EN, AMUGYIS AZ EN BRANCHEMBEN VAN EZ, SO MEG NEM COMPLETE UGY MINT AHOGY EN LETTEM ETTOL COMPLETE NEBUN
-            
-    return "na valami"
+            if document['_id'] != 'ඞ':
 
+                acc = string_to_dict(backtonormalstring(document['content'], structorder)) #TODO: indexes and primary key implement
+                if acc[col] == val:
+                    collection.delete_one(document)
+
+    index_handler_update = index_handler.copy()
+    for key in index_handler_update.keys():
+        if key != '_id':
+            index_handler_update[key] = None
+    wait = metadata.update_one({'_id': index_handler_update['_id']}, {'$set': index_handler_update})
+
+
+    del index_handler['_id']
+    ind_list = {k: [y for y in v.split('ඞ') if y] for k, v in index_handler.items() if v is not None and any(v.split('ඞ'))}
+    all_indexes = [item for sublist in ind_list.values() for item in sublist]
+    metadata.delete_many({'_id': {'$in': all_indexes}})
+    #wait for the server to delete
+    while metadata.count_documents({}) > 3:
+        ...
+
+    for col, ind in ind_list.items():
+        for indexName in ind:
+            create_index2(indexName, table_name, col)
+    
+    return "na valami"
 
 #passek helyett majd valami error uzenetet berakok
 
@@ -538,14 +603,15 @@ def select_table_name_handler(tables):
             return f'{tables} DOES NOT EXIST IN THE CURRENT DATABASE'
         collection = mydb[tables]
         metadata = mydb[f'{tables}.info']
-        struct = metadata.find_one({'_id': 'ඞSTRUCTඞ'})
+        structorder = metadata.find_one({'_id': 'ඞSTRUCTඞ'})
+        struct = backtonormalstruct(structorder)
         if struct is None:
             return 'YOUR TABLE WAS MADE IN AN OLDER VERSION'
         pk = struct['KeyValue']
         ret_list = []
         for doc in collection.find():
             if doc['_id'] != 'ඞ':
-                ans = string_to_dict(doc['content'])
+                ans = string_to_dict(backtonormalstring(doc['content'], structorder))
                 ans[pk] = doc['_id']
                 ret_list.append(ans)
         return ret_list
@@ -676,3 +742,11 @@ def evaluate_condition(data_value, operator, condition_value):
     elif operator == '<=':
         return data_value <= condition_value
     return False
+
+
+"""
+    structorder = metadata.find_one({'_id': 'ඞSTRUCTඞ'})
+    struct = backtonormalstruct(structorder)
+    backtonormalstring(newstring, structorder)
+    doc['content'] helyett backtonormalstring(doc['content'], structorder)
+"""

@@ -10,7 +10,7 @@ drop_table_regex = re.compile(r'Drop Table (\w+)', re.IGNORECASE)
 create_index_regex = re.compile(r'CREATE\s+INDEX\s+(\w+)\s+ON\s+(\w+) \((\w+)\)', re.IGNORECASE)
 insert_test = re.compile(r'INSERT INTO (\w+)', re.IGNORECASE)
 insert_doc_regex = re.compile(r'INSERT INTO ([A-Za-z0-9_]+) \(([^)]*)\)\s+VALUES \(([^)]*)\)', re.IGNORECASE)
-delete_doc_regex = re.compile(r'DELETE\s+FROM\s+(\w+)\s+WHERE\s+(\w+)\s*=\s*([0-9]*\.[0-9]+)',re.IGNORECASE)
+delete_doc_regex = re.compile(r'DELETE\s+FROM\s+(\w+)\s+WHERE\s+(\w+)\s*=\s*([A-Za-z0-9_@.]+)',re.IGNORECASE)
 inner_join_regex = re.compile(r'FROM\s([A-Za-z0-9_]+)\s+JOIN\s+([A-Za-z0-9_]+)\s+ON\s+([A-Za-z0-9_]+)\s+=\s+([A-Za-z0-9_]+)([^)]*)', re.IGNORECASE)
 select_all_regex = re.compile(r'SELECT\s+\*\s+FROM\s+([A-Za-z0-9_]+)$', re.IGNORECASE)
 select_regex = re.compile(r'SELECT\s+\(([^)]*)\)\s+FROM\s+([A-Za-z0-9_]+)$', re.IGNORECASE)
@@ -32,7 +32,6 @@ def get_databases():
     ans = ''
     i = 0
     for command in valami['text'].split(';') :
-        print(i)
         if command.strip() != '':
             ans += f'\n{sch(command.strip())}'
     return ans

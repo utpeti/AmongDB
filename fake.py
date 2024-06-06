@@ -1,7 +1,10 @@
 import random
 
 from faker import Faker
-
+from pymongo import MongoClient
+cluster = MongoClient('mongodb+srv://korposb:1234@amongdb.xrci9ew.mongodb.net/?retryWrites=true&w=majority&appName=AmongDB')
+mydb = cluster["bem"]
+table = mydb['STUDENTS']
 
 # Initialize Faker
 
@@ -33,14 +36,13 @@ def generate_insert_statement(n):
 
 
     # Return the INSERT statement as a string
-
-    return f"INSERT INTO STUDENTS (stud_id, name, birthday, avg) VALUES ({stud_id}, {name}, {birthday}, {avg});\n"
+    return f"{name}#{birthday}#{avg}"
 
 
 # Create a new text file to write the INSERT statements
+documents = []
 
-with open("insert_statements.txt", "w") as f:
+for i in range(1, 100000):
+    documents.append({'_id': f'{i}', 'content': generate_insert_statement(i)})
 
-    for i in range(1, 100000):
-
-        f.write(generate_insert_statement(i))
+table.insert_many(documents)
