@@ -1,3 +1,3 @@
-if (i := 3 )> 2:
-    pass
-print(i)
+l = ['1', '2', 'a', '3']
+
+print(l.remove('a'))

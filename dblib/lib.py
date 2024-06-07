@@ -588,7 +588,9 @@ def typecheck(val, typ:str):
 
 ### SELECT ###
 
-def indexfilter(metadata, indexhandler, conditions):
+def indexfilter(metadata, indexhandler, conditions, collection):
+    if conditions is None:
+        return [x for x in collection.distinct('_id') if x != 'ඞ']
     matches = condition_pattern.findall(conditions)
     if not matches:
         return False
@@ -599,23 +601,22 @@ def indexfilter(metadata, indexhandler, conditions):
         column = column.strip()
         value = value.strip().strip("'")
         if column not in indexhandler.keys():
-            print(column)
             return False
         index = indexhandler[column]
         if index is None:
-            print('index baj')
-            continue
-        indexes = [x for x in index.split('ඞ') if x]
-        index = metadata.find_one({'_id': indexes[0]})
-        index = index_to_dict(index)
-        acc = []
-        for key, vals in index.items():
-            if evaluate_condition(key, operator, value):
-                for x in vals:
-                    acc.append(x)
+            acc = [x for x in collection.distinct('_id') if x != 'ඞ']
+            print('jaj')
+        else:
+            indexes = [x for x in index.split('ඞ') if x]
+            index = metadata.find_one({'_id': indexes[0]})
+            index = index_to_dict(index)
+            acc = []
+            for key, vals in index.items():
+                if evaluate_condition(key, operator, value):
+                    for x in vals:
+                        acc.append(x)
         if len(result) == 0 :
             result = acc.copy()
-            print(result)
         elif current_operator == "AND":
             result = list(set(result) & set(acc))
         elif current_operator == "OR":
@@ -645,8 +646,7 @@ def select_table_name_handler(tables, conditions):
         if struct is None:
             return 'YOUR TABLE WAS MADE IN AN OLDER VERSION'
         pk = struct['KeyValue']
-        ids = indexfilter(metadata, index_handler, conditions)
-        print(ids)
+        ids = indexfilter(metadata, index_handler, conditions, collection)
         ret_list = []
         for doc in collection.find({'_id': {'$in': ids}}):
             if doc['_id'] != 'ඞ':
