@@ -189,8 +189,9 @@ def first_inner_join(table1: str, table2: str, col1: str, col2: str, conditions)
         index_handler2 = metadata2.find_one({'_id': 'ඞINDEXHANDLERඞ'})
         index2 = index_handler2[col2]
         ids1 = indexfilter(metadata1, index_handler1, conditions, table1, t1)
-        ids2 = indexfilter(metadata2, index_handler2, conditions, table2, t2)
         print(ids1)
+        ids2 = indexfilter(metadata2, index_handler2, conditions, table2, t2)
+        print(ids2)
         if col1 in table_struct1.keys() and col2 in table_struct2.keys():
             #indexes1 = table1.find_one({'_id': -1})
             #indexes2 = table2.find_one({'_id': -1})
@@ -610,12 +611,14 @@ def indexfilter(metadata, indexhandler, conditions, collection, tablename):
         if len(valami) == 2:
             table_name = valami[0]
             column = valami[1]
+            print([table_name, column])
             if tablename != table_name:
                 continue
         value = value.strip().strip("'")
         if column not in indexhandler.keys():
             continue
         index = indexhandler[column]
+        
         notmytable = False
         if index is None:
             acc = [x for x in collection.distinct('_id') if x != 'ඞ']
