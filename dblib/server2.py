@@ -10,39 +10,39 @@ drop_table_regex = re.compile(r'Drop Table (\w+)', re.IGNORECASE)
 create_index_regex = re.compile(r'CREATE\s+INDEX\s+(\w+)\s+ON\s+(\w+) \((\w+)\)', re.IGNORECASE)
 insert_test = re.compile(r'INSERT INTO (\w+)', re.IGNORECASE)
 insert_doc_regex = re.compile(r'INSERT INTO ([A-Za-z0-9_]+) \(([^)]*)\)\s+VALUES \(([^)]*)\)', re.IGNORECASE)
-delete_doc_regex = re.compile(r'DELETE\s+FROM\s+(\w+)\s+WHERE\s+(\w+)\s*=\s*([0-9]*\.[0-9]+)',re.IGNORECASE)
+delete_doc_regex = re.compile(r'DELETE\s+FROM\s+(\w+)\s+WHERE\s+(\w+)\s*=\s*([A-Za-z0-9_@.]+)',re.IGNORECASE)
 inner_join_regex = re.compile(r'FROM\s([A-Za-z0-9_]+)\s+JOIN\s+([A-Za-z0-9_]+)\s+ON\s+([A-Za-z0-9_]+)\s+=\s+([A-Za-z0-9_]+)([^)]*)', re.IGNORECASE)
 select_all_regex = re.compile(r'SELECT\s+\*\s+FROM\s+([A-Za-z0-9_]+)$', re.IGNORECASE)
 select_regex = re.compile(r'SELECT\s+\(([^)]*)\)\s+FROM\s+([A-Za-z0-9_]+)$', re.IGNORECASE)
 select_all_where = re.compile(r"SELECT\s+\*\s+FROM\s+([A-Za-z0-9_]+)\s+WHERE\s+((?:[A-Za-z0-9_]+\s*(?:=|>=|<=|>|<)\s*'?[A-Za-z0-9_@.]*'?\s*(?:AND|OR)?\s*)+)", re.IGNORECASE)
 select_where = re.compile(r"SELECT\s+\(([^)]*)\)\s+FROM\s+([A-Za-z0-9_]+)\s+WHERE\s+((?:[A-Za-z0-9_]+\s*(?:=|>=|<=|>|<)\s*'?[A-Za-z0-9_@.]*'?\s*(?:AND|OR)?\s*)+)", re.IGNORECASE)
 
-select_all_regex2 = re.compile(r'SELECT\s+\*\s+FROM\s+\(([^)]*)\)$', re.IGNORECASE)
-select_regex2 = re.compile(r'SELECT\s+\(([^)]*)\)\s+FROM\s+\(([^)]*)\)$', re.IGNORECASE)
-select_all_where2 = re.compile(r"SELECT\s+\*\s+FROM\s+\(([^)]*)\)\s+WHERE\s+((?:[A-Za-z0-9_.]+\s*(?:=|>=|<=|>|<)\s*'?[A-Za-z0-9_@.]*'?\s*(?:AND|OR)?\s*)+)", re.IGNORECASE)
-select_where2 = re.compile(r"SELECT\s+\(([^)]*)\)\s+FROM\s+\(([^)]*)\)\s+WHERE\s+((?:[A-Za-z0-9_.]+\s*(?:=|>=|<=|>|<)\s*'?[A-Za-z0-9_@.]*'?\s*(?:AND|OR)?\s*)+)", re.IGNORECASE)
+select_all_regex2 = re.compile(r'SELECT\s+\*\s+FROM\s+([^)]*)$', re.IGNORECASE)
+select_regex2 = re.compile(r'SELECT\s+([^)]*)\s+FROM\s+([^)]*)$', re.IGNORECASE)
+select_all_where2 = re.compile(r"SELECT\s+\*\s+FROM\s+([^)]*)\s+WHERE\s+((?:[A-Za-z0-9_.]+\s*(?:=|>=|<=|>|<)\s*'?[A-Za-z0-9_@.]*'?\s*(?:AND|OR)?\s*)+)", re.IGNORECASE)
+select_where2 = re.compile(r"SELECT\s+([^)]*)\s+FROM\s+([^)]*)\s+WHERE\s+((?:[A-Za-z0-9_.]+\s*(?:=|>=|<=|>|<)\s*'?[A-Za-z0-9_@.]*'?\s*(?:AND|OR)?\s*)+)", re.IGNORECASE)
 
-count_aggregate_regex = re.compile(r'SELECT\s+COUNT\s*\(\*\)\s+FROM\s+([A-Za-z0-9_]+)', re.IGNORECASE)
-sum_aggregate_regex = re.compile(r'SELECT\s+SUM\s*\(([^)]*)\)\s+FROM\s+([A-Za-z0-9_]+)', re.IGNORECASE)
-avg_aggregate_regex = re.compile(r'SELECT\s+AVG\s*\(([^)]*)\)\s+FROM\s+([A-Za-z0-9_]+)', re.IGNORECASE)
-min_aggregate_regex = re.compile(r'SELECT\s+MIN\s*\(([^)]*)\)\s+FROM\s+([A-Za-z0-9_]+)', re.IGNORECASE)
-max_aggregate_regex = re.compile(r'SELECT\s+MAX\s*\(([^)]*)\)\s+FROM\s+([A-Za-z0-9_]+)', re.IGNORECASE)
-
-group_by_regex = re.compile(r'SELECT\s+([A-Za-z0-9_]+)\s+FROM\s+([A-Za-z0-9_]+)\s+GROUP BY\s+([A-Za-z0-9_]+)', re.IGNORECASE)
 
 app = Flask(__name__,
             static_url_path="", 
             static_folder='static')
 
+@app.route("/api/getData", methods=['GET'])
+def get_data():
+    global ansGlob
+    return ansGlob
+    
+
 @app.route("/api/database/commands", methods=['POST'])
 def get_databases():
+    global ansGlob
     valami = request.json
     ans = ''
     i = 0
     for command in valami['text'].split(';') :
-        print(i)
         if command.strip() != '':
             ans += f'\n{sch(command.strip())}'
+    ansGlob = ans
     return ans
 
 def sch(command: str):
@@ -89,56 +89,27 @@ def sch(command: str):
         col2 = match.group(4)
         rest = match.group(5)
         commandMsg = lib.inner_join_handler(table1, table2, col1, col2, rest)
-    elif select_all_regex2.match(command):
-        match = select_all_regex2.search(command)
-        table_name = match.group(1)
-        commandMsg = lib.select_all(table_name)
-    elif select_regex2.match(command):
-        match = select_regex2.search(command)
-        col_names = match.group(1).split(', ')
-        table_name = match.group(2)
-        commandMsg = lib.select_col(col_names, table_name)
     elif select_all_where2.match(command):
         match = select_all_where2.search(command)
         table_name = match.group(1)
         conditions = match.group(2)
         commandMsg = lib.select_all_where(table_name, conditions)
+    elif select_all_regex2.match(command):
+        match = select_all_regex2.search(command)
+        table_name = match.group(1)
+        commandMsg = lib.select_all(table_name)
     elif select_where2.match(command):
         match = select_where2.search(command)
         table_name = match.group(2)
         col_names = match.group(1).split(', ')
         conditions = match.group(3)
         commandMsg = lib.select_where(col_names, table_name, conditions)
-    elif count_aggregate_regex.match(command):
-        match = count_aggregate_regex.search(command)
-        table_name = match.group(1)
-        commandMsg = lib.count_aggregate(table_name)
-    elif sum_aggregate_regex.match(command):
-        match = sum_aggregate_regex.search(command)
-        col_name = match.group(1)
+    elif select_regex2.match(command):
+        match = select_regex2.search(command)
+        col_names = match.group(1).split(', ')
         table_name = match.group(2)
-        commandMsg = lib.sum_aggregate(col_name, table_name)
-    elif avg_aggregate_regex.match(command):
-        match = avg_aggregate_regex.search(command)
-        col_name = match.group(1)
-        table_name = match.group(2)
-        commandMsg = lib.avg_aggregate(col_name, table_name)
-    elif min_aggregate_regex.match(command):
-        match = min_aggregate_regex.search(command)
-        col_name = match.group(1)
-        table_name = match.group(2)
-        commandMsg = lib.min_aggregate(col_name, table_name)
-    elif max_aggregate_regex.match(command):
-        match = max_aggregate_regex.search(command)
-        col_name = match.group(1)
-        table_name = match.group(2)
-        commandMsg = lib.max_aggregate(col_name, table_name)
-    elif group_by_regex.match(command):
-        match = group_by_regex.search(command)
-        col_name = match.group(1)
-        table_name = match.group(2)
-        group_by_col = match.group(3)
-        commandMsg = lib.group_by_aggregate(col_name, table_name, group_by_col)
+        commandMsg = lib.select_col(col_names, table_name)
+    
     return commandMsg
         
 @app.route("/api/database/db_list", methods=['GET'])

@@ -1,3 +1,63 @@
+let displayedRows = 50; // Initial number of rows to display
+const rowsPerPage = 50; // Number of rows to display per page
+
+document.addEventListener('DOMContentLoaded', async (event) => {
+  const res = await fetch('/api/getData');
+  if (res.ok) {
+    const dataJson = await res.text();
+    if (!dataJson.includes('not known') && dataJson.includes('[') && dataJson.includes(']') && !dataJson.includes('<!doctype html>')){
+      setResultTable(dataJson);
+    } else if (!dataJson.includes('not known') && !dataJson.includes('<!doctype html>')) {
+      document.getElementById('large_message_field').value += dataJson + '\n';
+    }
+  } else {
+    console.error('Failed to fetch data from server');
+  }
+});
+
+function setResultTable(dataJson) {
+  const table = document.getElementById("results-table");
+  console.log(dataJson);
+  table.innerHTML = '';
+  const textArea = document.getElementById('large_message_field');
+  const correctedJsonString = dataJson.replace(/'/g, '"');
+  const data = JSON.parse(correctedJsonString);
+
+  const header = table.createTHead();
+  const headerRow = header.insertRow(0);
+  for (const key in data[0]) {
+    const th = document.createElement('th');
+    th.textContent = key;
+    headerRow.appendChild(th);
+  }
+
+  const body = table.createTBody();
+  // Display only a subset of rows initially
+  displayRows(body, data, displayedRows);
+
+  // Add a "Show more" button
+  const showMoreButton = document.createElement('button');
+  showMoreButton.textContent = 'Show more';
+  showMoreButton.addEventListener('click', () => {
+    displayedRows += rowsPerPage; // Increment the number of displayed rows
+    displayRows(body, data, displayedRows);
+  });
+  table.parentNode.appendChild(showMoreButton);
+}
+
+function displayRows(body, data, numRows) {
+  // Clear existing rows
+  body.innerHTML = '';
+  // Display up to numRows rows
+  data.slice(0, numRows).forEach(row => {
+    const tr = body.insertRow();
+    for (const key in row) {
+      const td = tr.insertCell();
+      td.textContent = row[key];
+    }
+  });
+}
+
 //making life a bit happier
 function handleTabKey(event) {
   const tabKeyCode = 9;
@@ -53,7 +113,6 @@ function checkForTabinRow(text, index) {
 
 async function sendSomething(event) {
   event.preventDefault(); // Prevent the form from submitting normally
-  console.log('please2')
   const text = document.getElementById('large_text_field').value;
   const res = await fetch('/api/database/commands', {
       method: 'POST',
@@ -62,14 +121,17 @@ async function sendSomething(event) {
       },
       body: JSON.stringify({ "text": text })
   });
-  const data = await res.text();
-  document.getElementById('large_text_field').value = '';
-  console.log(data);
-  document.getElementById('large_message_field').value += data + '\n' ;
-  pleaseForTheLoveOfGod();
-  pleaseForTheLoveOfGod2();
-  // const myjson = await res.json();
-  // console.log(myjson);
+  const data = await res.text(); // Get response as text
+  dataJson = data; // Store the text directly
+  //sessionStorage.setItem('dataJson', dataJson); // Store data in session storage
+  if (!data.includes('not known') && !dataJson.includes('<!doctype html>')) {
+    document.getElementById('large_text_field').value = '';
+    document.getElementById('large_message_field').value += 'Operation successful\n';
+  } else {
+    document.getElementById('large_text_field').value = '';
+    document.getElementById('large_message_field').value += data + '\n';
+  // No redirection here
+  }
 }
 
 //--------------------DB------------------------
@@ -128,7 +190,9 @@ function populateList(databases) {
       contextMenu.style.top = e.clientY + 'px';
       contextMenu.style.display = 'block';
       contextMenu.style.flexDirection = 'row';
-      document.addEventListener('click', hideContextMenu);
+      document.addEventListener('click', () => {
+        contextMenu.style.display = 'none';
+      });
     });
     dbList.appendChild(dbButton);
 });
