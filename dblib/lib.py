@@ -140,35 +140,37 @@ def join_dic_strings(table_name1: str, table_name2: str, dic1: str, dic2: str, c
     for key, val in string_to_dict(dic1).items():
         joined_dict[f'{table_name1}.{key}'] = val
     for key, val in string_to_dict(dic2).items():
-        if key != common:
             joined_dict[f'{table_name2}.{key}'] = val
     return joined_dict
 
-def build_join(source_name: str, other_name: str, source_table, other_table, col, index, pk1, pk2, structorder_source, structorder_other):
+def build_join(source_name: str, other_name: str, source_table, other_table, col, index, pk1, pk2, structorder_source, structorder_other, ids_source, ids_other):
     inner_join_doc = []
-    for doc in source_table.find({}):
+    #WE ONLY SELECT THE NECESSARY IDS (WE FILTER THEM OUT)
+    for doc in source_table.find({'_id': {'$in': ids_source}}):
         if doc['_id'] != 'ඞ':
-            col_val = string_to_dict(backtonormalstring(doc['content'], structorder_source))[col]
             key1 = doc['_id']
+            col_val = string_to_dict(backtonormalstring(doc['content'], structorder_source)+ f'#{pk1}:{key1}')[col]
             #searching for the value in the other table
             i = index.find(col_val)
             #KEY OF OTHER DOC
             if i > 0 and index[i-1] == '#':
                 i2 = index.find('$', i)
                 i3 = index.find('#', i2)
+
                 if i3 > 0:
                     key2 = index[i2+1:i3]
                 else:
                     key2 = index[i2+1:]
                 for key in key2.split('ඞ'):
-                    other_table_doc = other_table.find_one({'_id': key})
-                    if other_table_doc is None:
-                        #continue
-                        ...
-                    inner_join_doc.append(join_dic_strings(other_name, source_name, backtonormalstring(other_table_doc['content'], structorder_other) + f'#{pk2}:{key}', backtonormalstring(doc['content'], structorder_source) + f'#{pk1}:{key1}', col))
+                    if key in ids_other:
+                        other_table_doc = other_table.find_one({'_id': key})
+                        if other_table_doc is None:
+                            #continue
+                            ...
+                        inner_join_doc.append(join_dic_strings(other_name, source_name, backtonormalstring(other_table_doc['content'], structorder_other) + f'#{pk2}:{key}', backtonormalstring(doc['content'], structorder_source) + f'#{pk1}:{key1}', col))
     return inner_join_doc
-
-def first_inner_join(table1: str, table2: str, col1: str, col2: str):
+#TODO: add indexfilter
+def first_inner_join(table1: str, table2: str, col1: str, col2: str, conditions):
     if table1 in mydb.list_collection_names() and table2 in mydb.list_collection_names():
         t1 = table1
         t2 = table2
@@ -182,22 +184,26 @@ def first_inner_join(table1: str, table2: str, col1: str, col2: str):
         table_struct2 = backtonormalstruct(structorder2)
         pk1 = table_struct1['KeyValue']
         pk2 = table_struct2['KeyValue']
+        index_handler1 = metadata1.find_one({'_id': 'ඞINDEXHANDLERඞ'})
+        index1 = index_handler1[col1]
+        index_handler2 = metadata2.find_one({'_id': 'ඞINDEXHANDLERඞ'})
+        index2 = index_handler2[col2]
+        ids1 = indexfilter(metadata1, index_handler1, conditions, table1, t1)
+        ids2 = indexfilter(metadata2, index_handler2, conditions, table2, t2)
+        print(ids1)
         if col1 in table_struct1.keys() and col2 in table_struct2.keys():
             #indexes1 = table1.find_one({'_id': -1})
             #indexes2 = table2.find_one({'_id': -1})
-            index_handler1 = metadata1.find_one({'_id': 'ඞINDEXHANDLERඞ'})
-            index1 = index_handler1[col1]
+            
             if index1 is not None:
                 index = [x for x in index1.split('ඞ') if x]
                 index = metadata1.find_one({'_id': index[0]})['VALUE']
-                return build_join(t2, t1, table2, table1, col2, index, pk1, pk2, structorder2, structorder1)
+                return build_join(t2, t1, table2, table1, col2, index, pk2, pk1, structorder2, structorder1, ids2, ids1)
             else:
-                index_handler2 = metadata2.find_one({'_id': 'ඞINDEXHANDLERඞ'})
-                index2 = index_handler2[col2]
                 if index2 is not None:
                     index = [x for x in index2.split('ඞ') if x]
                     index = metadata2.find_one({'_id': index[0]})['VALUE']
-                    return build_join(t1, t2, table1, table2, col1, index, pk1, pk2, structorder1, structorder2) #TODO: lehet fel kell cserelni
+                    return build_join(t1, t2, table1, table2, col1, index, pk1, pk2, structorder1, structorder2, ids1, ids2)
                 else:
                     #create_index2('ඞ', t1, col1)
                     if col1 == table_struct1['KeyValue']:
@@ -224,7 +230,7 @@ def first_inner_join(table1: str, table2: str, col1: str, col2: str):
                             else:
                                 acc_string += f'#{val}${key}'
                                 prev_val = val
-                    return build_join(t2, t1, table2, table1, col2, acc_string, pk1, pk2, structorder2, structorder1)
+                    return build_join(t2, t1, table2, table1, col2, acc_string, pk2, pk1, structorder2, structorder1, ids2, ids1)
         else:
             if col1 not in table_struct1.keys():
                 return f'{col1} DOESN\'T EXIST'
@@ -310,8 +316,8 @@ def rest_preproccess(rest: str):
         ans.append([table_name,col1,col2])
     return ans
 
-def inner_join_handler(table1: str, table2: str, col1: str, col2: str, rest: str):
-    ans = first_inner_join(table1, table2, col1, col2)
+def inner_join_handler(table1: str, table2: str, col1: str, col2: str, rest: str, conditions):
+    ans = first_inner_join(table1, table2, col1, col2, conditions)
     if len(rest.strip()) > 0:
         tables = rest_preproccess(rest)
         for content in tables:
@@ -588,7 +594,7 @@ def typecheck(val, typ:str):
 
 ### SELECT ###
 
-def indexfilter(metadata, indexhandler, conditions, collection):
+def indexfilter(metadata, indexhandler, conditions, collection, tablename):
     if conditions is None:
         return [x for x in collection.distinct('_id') if x != 'ඞ']
     matches = condition_pattern.findall(conditions)
@@ -596,16 +602,23 @@ def indexfilter(metadata, indexhandler, conditions, collection):
         return False
     result = []
     current_operator = None
+    notmytable = True
     for match in matches:
         column, operator, value, logical_op = match
         column = column.strip()
+        valami = column.split('.')
+        if len(valami) == 2:
+            table_name = valami[0]
+            column = valami[1]
+            if tablename != table_name:
+                continue
         value = value.strip().strip("'")
         if column not in indexhandler.keys():
-            return False
+            continue
         index = indexhandler[column]
+        notmytable = False
         if index is None:
             acc = [x for x in collection.distinct('_id') if x != 'ඞ']
-            print('jaj')
         else:
             indexes = [x for x in index.split('ඞ') if x]
             index = metadata.find_one({'_id': indexes[0]})
@@ -623,10 +636,12 @@ def indexfilter(metadata, indexhandler, conditions, collection):
             result = list(set(result) | set(acc))
         
         current_operator = logical_op.strip().upper() if logical_op else None
-    
+    if notmytable: #if no regulations are based on my table then we can return every id
+        return [x for x in collection.distinct('_id') if x != 'ඞ']
     return result
 
 def select_table_name_handler(tables, conditions):
+
     if inner_join_regex_for_select.match('FROM ' + tables):
         match = inner_join_regex_for_select.search('FROM ' + tables)
         table1 = match.group(1)
@@ -634,7 +649,7 @@ def select_table_name_handler(tables, conditions):
         col1 = match.group(3)
         col2 = match.group(4)
         rest = match.group(5)
-        return inner_join_handler(table1, table2, col1, col2, rest)
+        return inner_join_handler(table1, table2, col1, col2, rest, conditions)
     else:
         if tables not in mydb.list_collection_names():
             return f'{tables} DOES NOT EXIST IN THE CURRENT DATABASE'
@@ -646,10 +661,11 @@ def select_table_name_handler(tables, conditions):
         if struct is None:
             return 'YOUR TABLE WAS MADE IN AN OLDER VERSION'
         pk = struct['KeyValue']
-        ids = indexfilter(metadata, index_handler, conditions, collection)
+        ids = indexfilter(metadata, index_handler, conditions, collection, tables)
         ret_list = []
+        
         for doc in collection.find({'_id': {'$in': ids}}):
-            if doc['_id'] != 'ඞ':
+            if doc['_id'] != 'ඞ': 
                 ans = string_to_dict(backtonormalstring(doc['content'], structorder))
                 ans[pk] = doc['_id']
                 ret_list.append(ans)

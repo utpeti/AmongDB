@@ -79,7 +79,7 @@ def sch(command: str):
         col1 = match.group(3)
         col2 = match.group(4)
         rest = match.group(5)
-        commandMsg = lib.inner_join_handler(table1, table2, col1, col2, rest)
+        #commandMsg = lib.inner_join_handler(table1, table2, col1, col2, rest)
     elif select_all_where2.match(command):
         match = select_all_where2.search(command)
         table_name = match.group(1)
