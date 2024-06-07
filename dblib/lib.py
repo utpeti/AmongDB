@@ -192,8 +192,8 @@ def first_inner_join(table1: str, table2: str, col1: str, col2: str):
                 index2 = index_handler2[col2]
                 if index2 is not None:
                     index = [x for x in index2.split('ඞ') if x]
-                    index = metadata1.find_one({'_id': index[0]})['VALUE']
-                    return build_join(t2, t1, table2, table1, col2, index, pk2, pk1, structorder2, structorder1) #TODO: lehet fel kell cserelni
+                    index = metadata2.find_one({'_id': index[0]})['VALUE']
+                    return build_join(t1, t2, table1, table2, col1, index, pk1, pk2, structorder1, structorder2) #TODO: lehet fel kell cserelni
                 else:
                     #create_index2('ඞ', t1, col1)
                     if col1 == table_struct1['KeyValue']:
@@ -743,6 +743,62 @@ def evaluate_condition(data_value, operator, condition_value):
         return data_value <= condition_value
     return False
 
+### AGGREGATE FUNCTIONS ###
+#TODO: ezeket nem a selectnel kellene keressuk?
+def count_aggregate(col_name: str, table_name: str):
+    doc_list = select_table_name_handler(table_name)
+    if isinstance(doc_list ,str) or doc_list is None:
+        return doc_list
+    if col_name not in doc_list[0]:
+        return f'{col_name} IS AN INVALID COLUMN NAME'
+    return len(doc_list)
+
+def sum_aggregate(col_name: str, table_name: str):
+    doc_list = select_table_name_handler(table_name)
+    if isinstance(doc_list ,str) or doc_list is None:
+        return doc_list
+    if col_name not in doc_list[0]:
+        return f'{col_name} IS AN INVALID COLUMN NAME'
+    return sum((doc[col_name]) for doc in doc_list)
+
+def avg_aggregate(col_name: str, table_name: str):
+    doc_list = select_table_name_handler(table_name)
+    if isinstance(doc_list ,str) or doc_list is None:
+        return doc_list
+    if col_name not in doc_list[0]:
+        return f'{col_name} IS AN INVALID COLUMN NAME'
+    return sum((doc[col_name]) for doc in doc_list) / len(doc_list)
+
+def min_aggregate(col_name: str, table_name: str):
+    doc_list = select_table_name_handler(table_name)
+    if isinstance(doc_list ,str) or doc_list is None:
+        return doc_list
+    if col_name not in doc_list[0]:
+        return f'{col_name} IS AN INVALID COLUMN NAME'
+    return min((doc[col_name]) for doc in doc_list)
+
+def max_aggregate(col_name: str, table_name: str):
+    doc_list = select_table_name_handler(table_name)
+    if isinstance(doc_list ,str) or doc_list is None:
+        return doc_list
+    if col_name not in doc_list[0]:
+        return f'{col_name} IS AN INVALID COLUMN NAME'
+    return max((doc[col_name]) for doc in doc_list)
+
+def group_by_aggregate(col_name: str, table_name: str, group_by_col: str):
+    doc_list = select_table_name_handler(table_name)
+    if isinstance(doc_list ,str) or doc_list is None:
+        return doc_list
+    if col_name not in doc_list[0]:
+        return f'{col_name} IS AN INVALID COLUMN NAME'
+    if group_by_col not in doc_list[0]:
+        return f'{group_by_col} IS AN INVALID COLUMN NAME'
+    ret_dict = {}
+    for doc in doc_list:
+        if doc[group_by_col] not in ret_dict:
+            ret_dict[doc[group_by_col]] = []
+        ret_dict[doc[group_by_col]].append(doc[col_name])
+    return select_output_formatting(ret_dict)
 
 """
     structorder = metadata.find_one({'_id': 'ඞSTRUCTඞ'})
