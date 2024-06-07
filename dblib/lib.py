@@ -11,6 +11,7 @@ primary_key_regex = re.compile(r'\s+PRIMARY\s+KEY\s+\((\w+)\)', re.IGNORECASE)
 foreign_key_regex = re.compile(r'\s+FOREIGN\s+KEY\s+\((\w+)\)', re.IGNORECASE)
 unique_key_regex = re.compile(r'\s+UNIQUE\s+KEY\s+\((\w+)\)', re.IGNORECASE)
 inner_join_regex_for_select = re.compile(r'FROM\s([A-Za-z0-9_]+)\s+JOIN\s+([A-Za-z0-9_]+)\s+ON\s+([A-Za-z0-9_]+)\s+=\s+([A-Za-z0-9_]+)([^)]*)', re.IGNORECASE)
+condition_pattern = re.compile(r"([A-Za-z0-9_.]+)\s*(=|>=|<=|>|<)\s*('.*?'|[A-Za-z0-9_.]+)\s*(AND|OR)?", re.IGNORECASE)
 
 ### TABLE FUNCTIONS: ###
 
@@ -30,11 +31,13 @@ def create_table(name: str, content: str) -> str:
     uniquestruct['_id'] = 'ඞUNIQUE KEYSඞ'
     indexhandler = {}
     indexhandler['_id'] = 'ඞINDEXHANDLERඞ'
+    pk = ''
     for line in content.splitlines()[1:-1]:
         line.strip(',')
         if primary_key_regex.match(line):
             match = primary_key_regex.search(line)
             innertablestructwhichwillberestored.append(['KeyValue', match.group(1)])
+            pk = match.group(1)
             #tablestruct['KeyValue'] = match.group(1)
             uniquestruct[match.group(1)] = 0
         elif foreign_key_regex.match(line):
@@ -67,6 +70,7 @@ def create_table(name: str, content: str) -> str:
     mycol.insert_one({'_id': 'ඞ', 'TABLE CREATED': True})
     mycol_metadata.insert_one(uniquestruct)
     msg = "TABLE " + name + " CREATED!"
+    create_index2('primarykeyindex', name, pk)
     return msg
 
 def backtonormalstruct(structorder):
@@ -368,7 +372,7 @@ def create_index2(indexName: str, tableName: str, column: str) -> str:
             msg = "NO COLUMN NAMED " + column + "!"
             return msg
         if column.strip() == document['KeyValue']:
-            magicPK(indexName, collection, metadata, structorder)
+            magicPK(indexName, collection, metadata)
         else:
             magic(indexName, collection, column, metadata, structorder)
         update_index_handler(indexName, tableName, column)
@@ -414,7 +418,6 @@ def dict_to_string(d) -> str:
     return "#".join(f"{k}:{v}" for k, v in d.items())
 
 def string_to_dict(string) -> dict:
-    print(f'{string} aaaaaaaaaaaaaaaaaaaa-----------')
     return dict(item.split(':') for item in string.split('#'))
 
 #TYPES = ['INT', 'FLOAT', 'BIT', 'DATE', 'DATETIME', 'VARCHAR']
@@ -446,9 +449,6 @@ def tonewstring(d, structorder, pk):
 
 def backtonormalstring(newstring, structorder):
     l2 = newstring.split('#')
-    print()
-    print([newstring, structorder])
-    print()
     for k, t in structorder['cols']:
         if k == 'KeyValue':
             pk = t
@@ -457,7 +457,6 @@ def backtonormalstring(newstring, structorder):
         if k != 'KeyValue' and k != pk:
             l2[i] = f'{k}:{l2[i]}'
             i += 1
-    print(l2)
     return '#'.join(l2)
 
 def insertDoc(tablename: str, dest: str, content: str) -> str:
@@ -589,7 +588,44 @@ def typecheck(val, typ:str):
 
 ### SELECT ###
 
-def select_table_name_handler(tables):
+def indexfilter(metadata, indexhandler, conditions):
+    matches = condition_pattern.findall(conditions)
+    if not matches:
+        return False
+    result = []
+    current_operator = None
+    for match in matches:
+        column, operator, value, logical_op = match
+        column = column.strip()
+        value = value.strip().strip("'")
+        if column not in indexhandler.keys():
+            print(column)
+            return False
+        index = indexhandler[column]
+        if index is None:
+            print('index baj')
+            continue
+        indexes = [x for x in index.split('ඞ') if x]
+        index = metadata.find_one({'_id': indexes[0]})
+        index = index_to_dict(index)
+        acc = []
+        for key, vals in index.items():
+            if evaluate_condition(key, operator, value):
+                for x in vals:
+                    acc.append(x)
+        if len(result) == 0 :
+            result = acc.copy()
+            print(result)
+        elif current_operator == "AND":
+            result = list(set(result) & set(acc))
+        elif current_operator == "OR":
+            result = list(set(result) | set(acc))
+        
+        current_operator = logical_op.strip().upper() if logical_op else None
+    
+    return result
+
+def select_table_name_handler(tables, conditions):
     if inner_join_regex_for_select.match('FROM ' + tables):
         match = inner_join_regex_for_select.search('FROM ' + tables)
         table1 = match.group(1)
@@ -605,11 +641,14 @@ def select_table_name_handler(tables):
         metadata = mydb[f'{tables}.info']
         structorder = metadata.find_one({'_id': 'ඞSTRUCTඞ'})
         struct = backtonormalstruct(structorder)
+        index_handler = metadata.find_one({'_id': 'ඞINDEXHANDLERඞ'})
         if struct is None:
             return 'YOUR TABLE WAS MADE IN AN OLDER VERSION'
         pk = struct['KeyValue']
+        ids = indexfilter(metadata, index_handler, conditions)
+        print(ids)
         ret_list = []
-        for doc in collection.find():
+        for doc in collection.find({'_id': {'$in': ids}}):
             if doc['_id'] != 'ඞ':
                 ans = string_to_dict(backtonormalstring(doc['content'], structorder))
                 ans[pk] = doc['_id']
@@ -622,10 +661,10 @@ def select_output_formatting(d: dict) -> str:
     return d
 
 def select_all(table_name: str):
-    return select_table_name_handler(table_name)
+    return select_table_name_handler(table_name, None)
 
 def select_col(col_names, table_name):
-    doc_list = select_table_name_handler(table_name)
+    doc_list = select_table_name_handler(table_name, None)
     if isinstance(doc_list ,str) or doc_list is None:
         return doc_list
     #CHECK IF COL EXISTS
@@ -654,7 +693,7 @@ def select_col(col_names, table_name):
     return ret_list
 
 def select_all_where(table_name: str, conditions: str):
-    doc_list = select_table_name_handler(table_name)
+    doc_list = select_table_name_handler(table_name, conditions)
     if isinstance(doc_list ,str) or doc_list is None:
         return doc_list
     ret_list = []
@@ -664,7 +703,7 @@ def select_all_where(table_name: str, conditions: str):
     return ret_list
 
 def select_where(col_names, table_name: str, conditions: str):
-    doc_list = select_table_name_handler(table_name)
+    doc_list = select_table_name_handler(table_name, conditions)
     if isinstance(doc_list ,str) or doc_list is None:
         return doc_list
     #CHECK IF COL EXISTS
@@ -694,7 +733,6 @@ def select_where(col_names, table_name: str, conditions: str):
     return ret_list
 
 def evaluate_conditions(data, conditions):
-    condition_pattern = re.compile(r"([A-Za-z0-9_.]+)\s*(=|>=|<=|>|<)\s*('.*?'|[A-Za-z0-9_.]+)\s*(AND|OR)?", re.IGNORECASE)
     matches = condition_pattern.findall(conditions)
     
     if not matches:
