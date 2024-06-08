@@ -22,18 +22,27 @@ select_regex2 = re.compile(r'SELECT\s+([^)]*)\s+FROM\s+([^)]*)$', re.IGNORECASE)
 select_all_where2 = re.compile(r"SELECT\s+\*\s+FROM\s+([^)]*)\s+WHERE\s+((?:[A-Za-z0-9_.]+\s*(?:=|>=|<=|>|<)\s*'?[A-Za-z0-9_@.]*'?\s*(?:AND|OR)?\s*)+)", re.IGNORECASE)
 select_where2 = re.compile(r"SELECT\s+([^)]*)\s+FROM\s+([^)]*)\s+WHERE\s+((?:[A-Za-z0-9_.]+\s*(?:=|>=|<=|>|<)\s*'?[A-Za-z0-9_@.]*'?\s*(?:AND|OR)?\s*)+)", re.IGNORECASE)
 
+
 app = Flask(__name__,
             static_url_path="", 
             static_folder='static')
 
+@app.route("/api/getData", methods=['GET'])
+def get_data():
+    global ansGlob
+    return ansGlob
+    
+
 @app.route("/api/database/commands", methods=['POST'])
 def get_databases():
+    global ansGlob
     valami = request.json
     ans = ''
     i = 0
     for command in valami['text'].split(';') :
         if command.strip() != '':
             ans += f'\n{sch(command.strip())}'
+    ansGlob = ans
     return ans
 
 def sch(command: str):
@@ -79,7 +88,7 @@ def sch(command: str):
         col1 = match.group(3)
         col2 = match.group(4)
         rest = match.group(5)
-        #commandMsg = lib.inner_join_handler(table1, table2, col1, col2, rest)
+        commandMsg = lib.inner_join_handler(table1, table2, col1, col2, rest)
     elif select_all_where2.match(command):
         match = select_all_where2.search(command)
         table_name = match.group(1)

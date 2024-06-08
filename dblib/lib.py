@@ -19,7 +19,7 @@ condition_pattern = re.compile(r"([A-Za-z0-9_.]+)\s*(=|>=|<=|>|<)\s*('.*?'|[A-Za
 
 def create_table(name: str, content: str) -> str:
     if name in mydb.list_collection_names():
-        msg = "A TABLE NAMED " + name + " ALREADY EXISTS IN THE DATABASE!"
+        msg = "ERROR: A TABLE NAMED " + name + " ALREADY EXISTS IN THE DATABASE!"
         return msg
     mycol = mydb[name]
     mycol_metadata = mydb[f'{name}.info']
@@ -83,7 +83,7 @@ def backtonormalstruct(structorder):
         
 def drop_table(name: str) -> str:
     if name not in mydb.list_collection_names():
-        msg = "A TABLE NAMED " + name + " DOES NOT EXIST IN THE DATABASE!"
+        msg = "ERROR: A TABLE NAMED " + name + " DOES NOT EXIST IN THE DATABASE!"
         return msg
     mycol = mydb[name]
     mycol.drop()
@@ -102,7 +102,7 @@ def list_tables():
 def create_database(databaseName: str) -> str:
     dbnames = cluster.list_database_names()
     if databaseName in dbnames:
-        msg = "A DATABASE NAMED " + databaseName + " ALREADY EXISTS!"
+        msg = "ERROR: A DATABASE NAMED " + databaseName + " ALREADY EXISTS!"
     else:
         db = cluster[databaseName]
         initcollection = db[databaseName]
@@ -189,13 +189,8 @@ def first_inner_join(table1: str, table2: str, col1: str, col2: str, conditions)
         index_handler2 = metadata2.find_one({'_id': 'ඞINDEXHANDLERඞ'})
         index2 = index_handler2[col2]
         ids1 = indexfilter(metadata1, index_handler1, conditions, table1, t1)
-        print(ids1)
         ids2 = indexfilter(metadata2, index_handler2, conditions, table2, t2)
-        print(ids2)
-        if col1 in table_struct1.keys() and col2 in table_struct2.keys():
-            #indexes1 = table1.find_one({'_id': -1})
-            #indexes2 = table2.find_one({'_id': -1})
-            
+        if col1 in table_struct1.keys() and col2 in table_struct2.keys(): 
             if index1 is not None:
                 index = [x for x in index1.split('ඞ') if x]
                 index = metadata1.find_one({'_id': index[0]})['VALUE']
@@ -234,14 +229,14 @@ def first_inner_join(table1: str, table2: str, col1: str, col2: str, conditions)
                     return build_join(t2, t1, table2, table1, col2, acc_string, pk2, pk1, structorder2, structorder1, ids2, ids1)
         else:
             if col1 not in table_struct1.keys():
-                return f'{col1} DOESN\'T EXIST'
+                return f'ERROR: {col1} DOESN\'T EXIST'
             else:
-                return f'{col2} DOESN\'T EXIST'
+                return f'ERROR: {col2} DOESN\'T EXIST'
     else:
         if table1 not in mydb.list_collection_names():
-            return f'{table1} DOESN\'T EXIST'
+            return f'ERROR: {table1} DOESN\'T EXIST'
         else:
-            return f'{table2} DOESN\'T EXIST'
+            return f'ERROR: {table2} DOESN\'T EXIST'
     return 'ja'
 
 def nth_join_dic_and_string(doc, table_name2, table2, common):
@@ -273,7 +268,7 @@ def nth_build_join(dict1, table2_name: str, table2, col, col2, index, pk2):
 
 def nth_inner_join(table1: dict, table2: str, col1: str, col2: str):
     if table2 not in mydb.list_collection_names():
-        return f'{table2} DOESN\'T EXIST'
+        return f'ERROR: {table2} DOESN\'T EXIST'
     t2 = table2
     table2 = mydb[table2]
     metadata2 = mydb[f'{t2}.info']
@@ -281,7 +276,7 @@ def nth_inner_join(table1: dict, table2: str, col1: str, col2: str):
     table_struct2 = backtonormalstruct(structorder2)
     pk2 = table_struct2['KeyValue']
     if col2 not in table_struct2:
-        return f'{col2} DOESN\'T EXIST' 
+        return f'ERROR: {col2} DOESN\'T EXIST' 
     index_handler2 = metadata2.find_one({'_id': 'ඞINDEXHANDLERඞ'})
     index2 = index_handler2[col2]
     if index2 is not None:
@@ -372,11 +367,11 @@ def create_index2(indexName: str, tableName: str, column: str) -> str:
         collection = mydb[tableName]
         metadata = mydb[f'{tableName}.info']
         if metadata.find_one({'_id': indexName}):
-            return 'INDEX ALLREADY EXISTS'
+            return 'ERROR: INDEX ALLREADY EXISTS'
         structorder = metadata.find_one({'_id': 'ඞSTRUCTඞ'})
         document = backtonormalstruct(structorder)
         if column.strip() not in document and column.strip() != 'KeyValue':
-            msg = "NO COLUMN NAMED " + column + "!"
+            msg = "ERROR: NO COLUMN NAMED " + column + "!"
             return msg
         if column.strip() == document['KeyValue']:
             magicPK(indexName, collection, metadata)
@@ -386,7 +381,7 @@ def create_index2(indexName: str, tableName: str, column: str) -> str:
         #collection.create_index(column, name=str(indexName)) #maybe nem kell castelni, de igy megy so igy hagyom aztan ott rohad meg valoszinu
         msg = "INDEX " + indexName + " CREATED ON TABLE " + tableName + " FOR COLUMN: " + column
     else:
-        msg = "NO TABLE NAMED " + tableName + "!"
+        msg = "ERROR: NO TABLE NAMED " + tableName + "!"
     return msg
 
 def index_to_dict(index):
@@ -469,7 +464,7 @@ def backtonormalstring(newstring, structorder):
 def insertDoc(tablename: str, dest: str, content: str) -> str:
     msg = ''
     if len(dest) != len(content):
-        return "COLUMNS AND VALUES SHOULD HAVE THE SAME AMOUNT"
+        return "ERROR: COLUMNS AND VALUES SHOULD HAVE THE SAME AMOUNT"
     if tablename in mydb.list_collection_names():
         collection = mydb[tablename]
         metadata = mydb[f'{tablename}.info']
@@ -487,6 +482,8 @@ def insertDoc(tablename: str, dest: str, content: str) -> str:
                 if col == struct['KeyValue']:
                     keyVal = content[i]
                     pk_val = keyVal
+                    if collection.find_one({'_id': pk_val}):
+                        return 'ERROR: A DOCUMENT WITH THE GIVEN PRIMARY KEY ALLREADY EXISTS'
                     struct.pop(col)
                 else:
                     struct[col] = content[i]
@@ -507,13 +504,13 @@ def get_index_names_from_handler(handler: dict):
 
 def delete_doc_exact(table_name, col, val):
     if table_name not in mydb.list_collection_names():
-        return 'TABLE DOES NOT EXIST'
+        return 'ERROR: TABLE DOES NOT EXIST'
     collection = mydb[table_name]
     structorder = mydb[f'{table_name}.info'].find_one({'_id': 'ඞSTRUCTඞ'})
     struct = backtonormalstruct(structorder)
     struct.pop('_id')
     if not struct.get(col,False):
-        return "COL DOESNT EXIST"
+        return "ERROR: COL DOESNT EXIST"
     metadata = mydb[f'{table_name}.info']
     index_handler = metadata.find_one({ '_id': 'ඞINDEXHANDLERඞ'})
     indexes = index_handler[col]
@@ -611,7 +608,7 @@ def indexfilter(metadata, indexhandler, conditions, collection, tablename):
         if len(valami) == 2:
             table_name = valami[0]
             column = valami[1]
-            print([table_name, column])
+            #print([table_name, column])
             if tablename != table_name:
                 continue
         value = value.strip().strip("'")
@@ -655,14 +652,14 @@ def select_table_name_handler(tables, conditions):
         return inner_join_handler(table1, table2, col1, col2, rest, conditions)
     else:
         if tables not in mydb.list_collection_names():
-            return f'{tables} DOES NOT EXIST IN THE CURRENT DATABASE'
+            return f'ERROR: {tables} DOES NOT EXIST IN THE CURRENT DATABASE'
         collection = mydb[tables]
         metadata = mydb[f'{tables}.info']
         structorder = metadata.find_one({'_id': 'ඞSTRUCTඞ'})
         struct = backtonormalstruct(structorder)
         index_handler = metadata.find_one({'_id': 'ඞINDEXHANDLERඞ'})
         if struct is None:
-            return 'YOUR TABLE WAS MADE IN AN OLDER VERSION'
+            return 'ERROR: YOUR TABLE WAS MADE IN AN OLDER VERSION'
         pk = struct['KeyValue']
         ids = indexfilter(metadata, index_handler, conditions, collection, tables)
         ret_list = []
@@ -695,13 +692,13 @@ def select_col(col_names, table_name):
             if len(parts) == 2:
                 original_col, alias = parts[0].strip(), parts[1].strip()
                 if original_col.strip() not in keys:
-                    return f'{original_col} IS AN INVALID COLUMN NAME'
+                    return f'ERROR: {original_col} IS AN INVALID COLUMN NAME'
                 renames[original_col] = alias
             else:
                 raise ValueError(f"Invalid column alias format in: {col_name}")
         else:
             if col_name.strip() not in keys:
-                return f'{col_name} IS AN INVALID COLUMN NAME'
+                return f'ERROR: {col_name} IS AN INVALID COLUMN NAME'
             renames[col_name.strip()] = col_name.strip()
     ret_list = []
     for doc in doc_list:
@@ -723,7 +720,7 @@ def select_all_where(table_name: str, conditions: str):
 
 def select_where(col_names, table_name: str, conditions: str):
     doc_list = select_table_name_handler(table_name, conditions)
-    if isinstance(doc_list ,str) or doc_list is None:
+    if isinstance(doc_list ,str) or doc_list is None or len(doc_list) == 0:
         return doc_list
     #CHECK IF COL EXISTS
     keys = doc_list[0].keys()
@@ -734,13 +731,13 @@ def select_where(col_names, table_name: str, conditions: str):
             if len(parts) == 2:
                 original_col, alias = parts[0].strip(), parts[1].strip()
                 if original_col.strip() not in keys:
-                    return f'{original_col} IS AN INVALID COLUMN NAME'
+                    return f'ERROR: {original_col} IS AN INVALID COLUMN NAME'
                 renames[original_col] = alias
             else:
                 raise ValueError(f"Invalid column alias format in: {col_name}")
         else:
             if col_name.strip() not in keys:
-                return f'{col_name} IS AN INVALID COLUMN NAME'
+                return f'ERROR: {col_name} IS AN INVALID COLUMN NAME'
             renames[col_name.strip()] = col_name.strip()
     ret_list = []
     for doc in doc_list:
@@ -807,7 +804,7 @@ def count_aggregate(col_name: str, table_name: str):
     if isinstance(doc_list ,str) or doc_list is None:
         return doc_list
     if col_name not in doc_list[0]:
-        return f'{col_name} IS AN INVALID COLUMN NAME'
+        return f'ERROR: {col_name} IS AN INVALID COLUMN NAME'
     return len(doc_list)
 
 def sum_aggregate(col_name: str, table_name: str):
@@ -815,7 +812,7 @@ def sum_aggregate(col_name: str, table_name: str):
     if isinstance(doc_list ,str) or doc_list is None:
         return doc_list
     if col_name not in doc_list[0]:
-        return f'{col_name} IS AN INVALID COLUMN NAME'
+        return f'ERROR: {col_name} IS AN INVALID COLUMN NAME'
     return sum((doc[col_name]) for doc in doc_list)
 
 def avg_aggregate(col_name: str, table_name: str):
@@ -823,7 +820,7 @@ def avg_aggregate(col_name: str, table_name: str):
     if isinstance(doc_list ,str) or doc_list is None:
         return doc_list
     if col_name not in doc_list[0]:
-        return f'{col_name} IS AN INVALID COLUMN NAME'
+        return f'ERROR: {col_name} IS AN INVALID COLUMN NAME'
     return sum((doc[col_name]) for doc in doc_list) / len(doc_list)
 
 def min_aggregate(col_name: str, table_name: str):
@@ -831,7 +828,7 @@ def min_aggregate(col_name: str, table_name: str):
     if isinstance(doc_list ,str) or doc_list is None:
         return doc_list
     if col_name not in doc_list[0]:
-        return f'{col_name} IS AN INVALID COLUMN NAME'
+        return f'ERROR: {col_name} IS AN INVALID COLUMN NAME'
     return min((doc[col_name]) for doc in doc_list)
 
 def max_aggregate(col_name: str, table_name: str):
@@ -839,7 +836,7 @@ def max_aggregate(col_name: str, table_name: str):
     if isinstance(doc_list ,str) or doc_list is None:
         return doc_list
     if col_name not in doc_list[0]:
-        return f'{col_name} IS AN INVALID COLUMN NAME'
+        return f'ERROR: {col_name} IS AN INVALID COLUMN NAME'
     return max((doc[col_name]) for doc in doc_list)
 
 def group_by_aggregate(col_name: str, table_name: str, group_by_col: str):
@@ -847,9 +844,9 @@ def group_by_aggregate(col_name: str, table_name: str, group_by_col: str):
     if isinstance(doc_list ,str) or doc_list is None:
         return doc_list
     if col_name not in doc_list[0]:
-        return f'{col_name} IS AN INVALID COLUMN NAME'
+        return f'ERROR: {col_name} IS AN INVALID COLUMN NAME'
     if group_by_col not in doc_list[0]:
-        return f'{group_by_col} IS AN INVALID COLUMN NAME'
+        return f'ERROR: {group_by_col} IS AN INVALID COLUMN NAME'
     ret_dict = {}
     for doc in doc_list:
         if doc[group_by_col] not in ret_dict:
