@@ -22,6 +22,15 @@ select_regex2 = re.compile(r'SELECT\s+([^)]*)\s+FROM\s+([^)]*)$', re.IGNORECASE)
 select_all_where2 = re.compile(r"SELECT\s+\*\s+FROM\s+([^)]*)\s+WHERE\s+((?:[A-Za-z0-9_.]+\s*(?:=|>=|<=|>|<)\s*'?[A-Za-z0-9_@.]*'?\s*(?:AND|OR)?\s*)+)", re.IGNORECASE)
 select_where2 = re.compile(r"SELECT\s+([^)]*)\s+FROM\s+([^)]*)\s+WHERE\s+((?:[A-Za-z0-9_.]+\s*(?:=|>=|<=|>|<)\s*'?[A-Za-z0-9_@.]*'?\s*(?:AND|OR)?\s*)+)", re.IGNORECASE)
 
+## Aggregates, has to work with *, column(s), table and group by
+count_aggregate_regex = re.compile(r"SELECT\s+COUNT\s*\(([^)]*)\)\s+FROM\s+([^)]*)\s+WHERE\s+((?:[A-Za-z0-9_]+\s*(?:=|>=|<=|>|<)\s*'?[A-Za-z0-9_@.]*'?\s*(?:AND|OR)?\s*)+)$", re.IGNORECASE)
+sum_aggregate_regex = re.compile(r"SELECT\s+SUM\s*\(([^)]*)\)\s+FROM\s+([^)]*)\s+WHERE\s+((?:[A-Za-z0-9_]+\s*(?:=|>=|<=|>|<)\s*'?[A-Za-z0-9_@.]*'?\s*(?:AND|OR)?\s*)+)$", re.IGNORECASE)
+avg_aggregate_regex = re.compile(r"SELECT\s+AVG\s*\(([^)]*)\)\s+FROM\s+([^)]*)\s+WHERE\s+((?:[A-Za-z0-9_]+\s*(?:=|>=|<=|>|<)\s*'?[A-Za-z0-9_@.]*'?\s*(?:AND|OR)?\s*)+)$", re.IGNORECASE)
+min_aggregate_regex = re.compile(r"SELECT\s+MIN\s*\(([^)]*)\)\s+FROM\s+([^)]*)\s+WHERE\s+((?:[A-Za-z0-9_]+\s*(?:=|>=|<=|>|<)\s*'?[A-Za-z0-9_@.]*'?\s*(?:AND|OR)?\s*)+)$", re.IGNORECASE)
+max_aggregate_regex = re.compile(r"SELECT\s+MAX\s*\(([^)]*)\)\s+FROM\s+([^)]*)\s+WHERE\s+((?:[A-Za-z0-9_]+\s*(?:=|>=|<=|>|<)\s*'?[A-Za-z0-9_@.]*'?\s*(?:AND|OR)?\s*)+)$", re.IGNORECASE)
+
+group_by_regex = re.compile(r"SELECT\s+([^)]*)\s+FROM\s+([^)]*)\s+GROUP BY\s+([^)]*)\s+WHERE\s+((?:[A-Za-z0-9_]+\s*(?:=|>=|<=|>|<)\s*'?[A-Za-z0-9_@.]*'?\s*(?:AND|OR)?\s*)+)$", re.IGNORECASE)
+
 
 app = Flask(__name__,
             static_url_path="", 
@@ -109,6 +118,43 @@ def sch(command: str):
         col_names = match.group(1).split(', ')
         table_name = match.group(2)
         commandMsg = lib.select_col(col_names, table_name)
+    elif count_aggregate_regex.match(command):
+        match = count_aggregate_regex.search(command)
+        col_names = match.group(1)
+        table_name = match.group(2)
+        conditions = match.group(3)
+        commandMsg = lib.count_aggregate(col_names, table_name, conditions)
+    elif sum_aggregate_regex.match(command):
+        match = sum_aggregate_regex.search(command)
+        col_name = match.group(1)
+        table_name = match.group(2)
+        conditions = match.group(3)
+        commandMsg = lib.sum_aggregate(col_name, table_name, conditions)
+    elif avg_aggregate_regex.match(command):
+        match = avg_aggregate_regex.search(command)
+        col_name = match.group(1)
+        table_name = match.group(2)
+        conditions = match.group(3)
+        commandMsg = lib.avg_aggregate(col_name, table_name, conditions)
+    elif min_aggregate_regex.match(command):
+        match = min_aggregate_regex.search(command)
+        col_name = match.group(1)
+        table_name = match.group(2)
+        conditions = match.group(3)
+        commandMsg = lib.min_aggregate(col_name, table_name, conditions)
+    elif max_aggregate_regex.match(command):
+        match = max_aggregate_regex.search(command)
+        col_name = match.group(1)
+        table_name = match.group(2)
+        conditions = match.group(3)
+        commandMsg = lib.max_aggregate(col_name, table_name, conditions)
+    elif group_by_regex.match(command):
+        match = group_by_regex.search(command)
+        col_name = match.group(1)
+        table_name = match.group(2)
+        group_by_col = match.group(3)
+        conditions = match.group(4)
+        commandMsg = lib.group_by_aggregate(col_name, table_name, group_by_col, conditions)
     
     return commandMsg
         

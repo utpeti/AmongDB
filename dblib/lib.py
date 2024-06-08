@@ -802,48 +802,57 @@ def evaluate_condition(data_value, operator, condition_value):
 
 ### AGGREGATE FUNCTIONS ###
 #TODO: ezeket nem a selectnel kellene keressuk?
-def count_aggregate(col_name: str, table_name: str):
-    doc_list = select_table_name_handler(table_name)
+def count_aggregate(col_name: str, table_name: str, conditions: str):
+    conditionsS = conditions.split(' ')
+    doc_list = select_table_name_handler(table_name, conditionsS)
     if isinstance(doc_list ,str) or doc_list is None:
+        print(doc_list)
         return doc_list
     if col_name not in doc_list[0]:
+        print(doc_list[0])
         return f'{col_name} IS AN INVALID COLUMN NAME'
+    print(2)
     return len(doc_list)
 
-def sum_aggregate(col_name: str, table_name: str):
-    doc_list = select_table_name_handler(table_name)
+def sum_aggregate(col_name: str, table_name: str, conditions: str):
+    conditionsS = conditions.split(' ')
+    doc_list = select_table_name_handler(table_name, conditionsS)
     if isinstance(doc_list ,str) or doc_list is None:
         return doc_list
     if col_name not in doc_list[0]:
         return f'{col_name} IS AN INVALID COLUMN NAME'
     return sum((doc[col_name]) for doc in doc_list)
 
-def avg_aggregate(col_name: str, table_name: str):
-    doc_list = select_table_name_handler(table_name)
+def avg_aggregate(col_name: str, table_name: str, conditions: str):
+    conditionsS = conditions.split(' ')
+    doc_list = select_table_name_handler(table_name, conditionsS)
     if isinstance(doc_list ,str) or doc_list is None:
         return doc_list
     if col_name not in doc_list[0]:
         return f'{col_name} IS AN INVALID COLUMN NAME'
     return sum((doc[col_name]) for doc in doc_list) / len(doc_list)
 
-def min_aggregate(col_name: str, table_name: str):
-    doc_list = select_table_name_handler(table_name)
+def min_aggregate(col_name: str, table_name: str, conditions: str):
+    conditionsS = conditions.split(' ')
+    doc_list = select_table_name_handler(table_name, conditionsS)
     if isinstance(doc_list ,str) or doc_list is None:
         return doc_list
     if col_name not in doc_list[0]:
         return f'{col_name} IS AN INVALID COLUMN NAME'
     return min((doc[col_name]) for doc in doc_list)
 
-def max_aggregate(col_name: str, table_name: str):
-    doc_list = select_table_name_handler(table_name)
+def max_aggregate(col_name: str, table_name: str, conditions: str):
+    conditionsS = conditions.split(' ')
+    doc_list = select_table_name_handler(table_name, conditionsS)
     if isinstance(doc_list ,str) or doc_list is None:
         return doc_list
     if col_name not in doc_list[0]:
         return f'{col_name} IS AN INVALID COLUMN NAME'
     return max((doc[col_name]) for doc in doc_list)
 
-def group_by_aggregate(col_name: str, table_name: str, group_by_col: str):
-    doc_list = select_table_name_handler(table_name)
+def group_by_aggregate(col_name: str, table_name: str, group_by_col: str, conditions: str):
+    conditionsS = conditions.split(' ')
+    doc_list = select_table_name_handler(table_name, conditionsS)
     if isinstance(doc_list ,str) or doc_list is None:
         return doc_list
     if col_name not in doc_list[0]:
