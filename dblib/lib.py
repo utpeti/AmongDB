@@ -12,6 +12,8 @@ foreign_key_regex = re.compile(r'\s+FOREIGN\s+KEY\s+\((\w+)\)', re.IGNORECASE)
 unique_key_regex = re.compile(r'\s+UNIQUE\s+KEY\s+\((\w+)\)', re.IGNORECASE)
 inner_join_regex_for_select = re.compile(r'FROM\s([A-Za-z0-9_]+)\s+JOIN\s+([A-Za-z0-9_]+)\s+ON\s+([A-Za-z0-9_]+)\s+=\s+([A-Za-z0-9_]+)([^)]*)', re.IGNORECASE)
 condition_pattern = re.compile(r"([A-Za-z0-9_.]+)\s*(=|>=|<=|>|<)\s*('.*?'|[A-Za-z0-9_.]+)\s*(AND|OR)?", re.IGNORECASE)
+METHODS = ['MIN', 'MAX', 'AVG', 'COUNT', 'SUM']
+
 
 ### TABLE FUNCTIONS: ###
 
@@ -676,14 +678,92 @@ def select_output_formatting(d: dict) -> str:
         d[key] = ', '.join(value)
     return d
 
+def groupby(group, docs):
+    if group not in docs[0].keys():
+        return f'ERROR: {group} not good'
+    grouped = {}
+    for d in docs:
+        key = d[group]
+        if key not in grouped:
+            grouped[key] = {}
+            for k, v in d.items():
+                if k == group:
+                    grouped[key][k] = v
+                else:
+                    grouped[key][k] = v
+        else:
+            for k, v in d.items():
+                if k != group:
+                    grouped[key][k] += f'\n{v}'
+    
+    return [grouped[key] for key in grouped]
+
+def colmethodseparator(l):
+    methods = {}
+    filtered_list = []
+    for item in l:
+        found = False
+        for method in METHODS:
+            if method in item:
+                found = True
+                column = item.replace(method, '').replace('(', '').replace(')', '').strip()
+                methods[column] = method
+                continue
+        if not found:
+            filtered_list.append(item)
+    return filtered_list, methods
+
+def apply_methods(data, methods_dict):
+    result = {}
+    for column, method in methods_dict.items():
+        try:
+            values = [float(row[column]) for row in data]
+        except:
+            values = [row[column] for row in data]
+        if method == 'MIN':
+            result[f'{column}_{method}'] = f'{column}_{method}:{min(values)}'
+        elif method == 'MAX':
+            result[f'{column}_{method}'] = f'{column}_{method}:{max(values)}'
+        elif method == 'AVG':
+            result[f'{column}_{method}'] = f'{column}_{method}:{sum(values) / len(values)}'
+        elif method == 'COUNT':
+            result[f'{column}_{method}'] = f'{column}_{method}:{len(values)}'
+        elif method == 'SUM':
+            result[f'{column}_{method}'] = f'{column}_{method}:{sum(values)}'
+    return [result]
+
 def select_all(table_name: str):
-    return select_table_name_handler(table_name, None)
+    group = table_name.split('GROUP BY')
+    regroup = False
+    if len(group) == 2:
+        table_name = group[0].strip().replace("\n", "")
+        group = group[1].strip()
+        regroup = True
+    ret = select_table_name_handler(table_name, None)
+    if regroup and len(ret) != 0:
+        ret = groupby(group, ret)
+    return ret
 
 def select_col(col_names, table_name):
+    group = table_name.split('GROUP BY')
+    regroup = False
+    if len(group) == 2:
+        table_name = group[0].strip().replace("\n", "")
+        group = group[1].strip()
+        regroup = True
+    
     doc_list = select_table_name_handler(table_name, None)
+    col_names, methods = colmethodseparator(col_names)
+    methods_used = False
+    if len(methods) != 0 and methods is not None:
+        methods_used = True
+        methods = apply_methods(doc_list, methods)
+    if regroup and len(doc_list) != 0:
+        doc_list = groupby(group, doc_list)
     if isinstance(doc_list ,str) or doc_list is None:
         return doc_list
     #CHECK IF COL EXISTS
+    
     keys = doc_list[0].keys()
     renames = {}
     for col_name in col_names:
@@ -706,9 +786,18 @@ def select_col(col_names, table_name):
         for key, alias in renames.items():
             ret_dict[alias] = doc[key]
         ret_list.append(ret_dict)
+    if methods_used:
+        return methods + ret_list
     return ret_list
 
 def select_all_where(table_name: str, conditions: str):
+    group = conditions.split('GROUP BY')
+    regroup = False
+    if len(group) == 2:
+        conditions = group[0].strip().replace("\n", "")
+        group = group[1].strip()
+        print([conditions, group])
+        regroup = True
     doc_list = select_table_name_handler(table_name, conditions)
     if isinstance(doc_list ,str) or doc_list is None:
         return doc_list
@@ -716,13 +805,28 @@ def select_all_where(table_name: str, conditions: str):
     for doc in doc_list:
         if evaluate_conditions(doc, conditions):
             ret_list.append(doc)
+    if regroup and len(ret_list) != 0:
+        ret_list = groupby(group, ret_list)
     return ret_list
 
 def select_where(col_names, table_name: str, conditions: str):
+    group = conditions.split('GROUP BY')
+    regroup = False
+    if len(group) == 2:
+        conditions = group[0].strip().replace("\n", "")
+        group = group[1].strip()
+        regroup = True
     doc_list = select_table_name_handler(table_name, conditions)
     if isinstance(doc_list ,str) or doc_list is None or len(doc_list) == 0:
         return doc_list
     #CHECK IF COL EXISTS
+    col_names, methods = colmethodseparator(col_names)
+    methods_used = False
+    if len(methods) != 0 and methods is not None:
+        methods_used = True
+        methods = apply_methods(doc_list, methods)
+    if regroup and len(doc_list) != 0:
+        doc_list = groupby(group, doc_list)
     keys = doc_list[0].keys()
     renames = {}
     for col_name in col_names:
@@ -746,6 +850,8 @@ def select_where(col_names, table_name: str, conditions: str):
             for key, alias in renames.items():
                 ret_dict[alias] = doc[key]
             ret_list.append(ret_dict)
+    if methods_used:
+        return methods + ret_list
     return ret_list
 
 def evaluate_conditions(data, conditions):
@@ -796,67 +902,3 @@ def evaluate_condition(data_value, operator, condition_value):
     elif operator == '<=':
         return data_value <= condition_value
     return False
-
-### AGGREGATE FUNCTIONS ###
-#TODO: ezeket nem a selectnel kellene keressuk?
-def count_aggregate(col_name: str, table_name: str):
-    doc_list = select_table_name_handler(table_name)
-    if isinstance(doc_list ,str) or doc_list is None:
-        return doc_list
-    if col_name not in doc_list[0]:
-        return f'ERROR: {col_name} IS AN INVALID COLUMN NAME'
-    return len(doc_list)
-
-def sum_aggregate(col_name: str, table_name: str):
-    doc_list = select_table_name_handler(table_name)
-    if isinstance(doc_list ,str) or doc_list is None:
-        return doc_list
-    if col_name not in doc_list[0]:
-        return f'ERROR: {col_name} IS AN INVALID COLUMN NAME'
-    return sum((doc[col_name]) for doc in doc_list)
-
-def avg_aggregate(col_name: str, table_name: str):
-    doc_list = select_table_name_handler(table_name)
-    if isinstance(doc_list ,str) or doc_list is None:
-        return doc_list
-    if col_name not in doc_list[0]:
-        return f'ERROR: {col_name} IS AN INVALID COLUMN NAME'
-    return sum((doc[col_name]) for doc in doc_list) / len(doc_list)
-
-def min_aggregate(col_name: str, table_name: str):
-    doc_list = select_table_name_handler(table_name)
-    if isinstance(doc_list ,str) or doc_list is None:
-        return doc_list
-    if col_name not in doc_list[0]:
-        return f'ERROR: {col_name} IS AN INVALID COLUMN NAME'
-    return min((doc[col_name]) for doc in doc_list)
-
-def max_aggregate(col_name: str, table_name: str):
-    doc_list = select_table_name_handler(table_name)
-    if isinstance(doc_list ,str) or doc_list is None:
-        return doc_list
-    if col_name not in doc_list[0]:
-        return f'ERROR: {col_name} IS AN INVALID COLUMN NAME'
-    return max((doc[col_name]) for doc in doc_list)
-
-def group_by_aggregate(col_name: str, table_name: str, group_by_col: str):
-    doc_list = select_table_name_handler(table_name)
-    if isinstance(doc_list ,str) or doc_list is None:
-        return doc_list
-    if col_name not in doc_list[0]:
-        return f'ERROR: {col_name} IS AN INVALID COLUMN NAME'
-    if group_by_col not in doc_list[0]:
-        return f'ERROR: {group_by_col} IS AN INVALID COLUMN NAME'
-    ret_dict = {}
-    for doc in doc_list:
-        if doc[group_by_col] not in ret_dict:
-            ret_dict[doc[group_by_col]] = []
-        ret_dict[doc[group_by_col]].append(doc[col_name])
-    return select_output_formatting(ret_dict)
-
-"""
-    structorder = metadata.find_one({'_id': 'ඞSTRUCTඞ'})
-    struct = backtonormalstruct(structorder)
-    backtonormalstring(newstring, structorder)
-    doc['content'] helyett backtonormalstring(doc['content'], structorder)
-"""
